@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tristan Muzzu — Blender add-ons</title>
+<meta name="description" content="Blender add-ons for hard-surface modelling and game asset pipelines.">
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --fg: #1c1c1a;
+    --muted: #6a6862;
+    --rule: #dedbd4;
+    --link: #8a4b1e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16171a; --fg: #e6e4df; --muted: #918e87;
+      --rule: #2c2e33; --link: #d99b62;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 5rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 .2rem; font-weight: 600; letter-spacing: -.01em; }
+  h2 {
+    font-size: 1.05rem; margin: 3rem 0 .9rem; font-weight: 600;
+    padding-bottom: .4rem; border-bottom: 1px solid var(--rule);
+  }
+  h3 { font-size: .98rem; margin: 1.8rem 0 .4rem; font-weight: 600; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--link); }
+  .sub { color: var(--muted); margin: 0 0 1.6rem; }
+  .meta { color: var(--muted); font-size: .87rem; }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .87em;
+  }
+  figure { margin: 1.2rem 0 1.6rem; }
+  img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  figcaption { color: var(--muted); font-size: .85rem; margin-top: .45rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: .5rem .6rem .5rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+  td.dl { white-space: nowrap; width: 1%; }
+  .btn {
+    display: inline-block; padding: .3rem .7rem; border: 1px solid var(--rule);
+    border-radius: 3px; text-decoration: none; font-size: .85rem;
+  }
+  .btn:hover { border-color: var(--link); }
+  .btn-main {
+    display: inline-block; padding: .5rem 1rem; border: 1px solid var(--link);
+    border-radius: 3px; text-decoration: none; margin: .3rem .4rem .3rem 0;
+  }
+  ul { padding-left: 1.1rem; }
+  li { margin-bottom: .3rem; }
+  footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .87rem; }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Tristan Muzzu</h1>
+  <p class="sub">Blender add-ons for hard-surface modelling and game asset pipelines.</p>
+
+  <p>
+    I write tools for the boring parts of 3D work — the panelling, the renaming,
+    the export checks. Everything here is tested against Blender 3.6 LTS, 4.2 LTS,
+    4.5 LTS, 5.0 and 5.2 before it goes out, because add-ons that quietly break on
+    a version bump are the main reason people stop trusting them.
+  </p>
+
+  <h2>PanelForge</h2>
+
+  <p>
+    Procedural sci-fi hull plating. It takes a hard-surface mesh and generates
+    panel layouts, recessed sections, slatted vents, raised blocks and blade fins,
+    assigned across five material slots.
+  </p>
+
+  <figure>
+    <img src="img/panelforge_before_after.jpg" alt="A blocked-out hull before and after PanelForge, same camera and lighting">
+    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,948 out, 0.016 s.</figcaption>
+  </figure>
+
+  <p>
+    The detail is placed rather than sprayed. Plate depths step in fixed
+    increments instead of drifting, detail clusters into hotspots the way real
+    hardware does, and some plating is deliberately left off so bare hull shows
+    through. Sixteen parameters, one seed, reproducible output.
+  </p>
+
+  <figure>
+    <img src="img/panelforge_seed_grid.jpg" alt="Four different plating layouts generated on the same hull mesh">
+    <figcaption>One mesh, four seeds.</figcaption>
+  </figure>
+
+  <p class="meta">In development. Coming to Superhive.</p>
+
+  <h2>Free add-ons</h2>
+
+  <p>
+    Twelve small tools I built for my own workflow and kept. MIT licensed, no
+    strings. Each is a single <code>.py</code> file — download it and use
+    <em>Edit &rarr; Preferences &rarr; Add-ons &rarr; Install</em>.
+  </p>
+
+  <p>
+    <a class="btn-main" href="https://github.com/tristanmuzzu/blender-tools/archive/refs/heads/main.zip">Download all (zip)</a>
+    <a class="btn-main" href="https://github.com/tristanmuzzu/blender-tools">Source on GitHub</a>
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Add-on</th><th>What it does</th><th></th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Asset Check</td><td>Pre-export validation — transforms, scale, manifold geometry, UVs — plus a mechanical auto-fix</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_asset_check.py">.py</a></td></tr>
+      <tr><td>Surface Scatter</td><td>Area-weighted scatter across a surface with slope limits and per-instance jitter</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_surface_scatter.py">.py</a></td></tr>
+      <tr><td>Quick Export</td><td>glTF or FBX with Unity and Unreal axis presets, optionally one file per object</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_quick_export.py">.py</a></td></tr>
+      <tr><td>Mesh Stats</td><td>Live triangle, n-gon, loose vertex and manifold readout with a jump-to-n-gons button</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_mesh_stats.py">.py</a></td></tr>
+      <tr><td>Auto Frame</td><td>Fits the camera to a selection by projecting real vertices, not the bounding box</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_auto_frame.py">.py</a></td></tr>
+      <tr><td>Seam by Angle</td><td>Marks UV seams on edges over a threshold, then unwraps</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_seam_by_angle.py">.py</a></td></tr>
+      <tr><td>Turntable</td><td>One-click orbit animation on a reusable pivot, linear interpolation, no loop stutter</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_turntable.py">.py</a></td></tr>
+      <tr><td>Origin Tools</td><td>Origin to bottom, centre or world zero, and drop to floor</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_origin_tools.py">.py</a></td></tr>
+      <tr><td>Batch Rename</td><td>Pattern renaming with numbering, plus find and replace, mesh data kept in sync</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_batch_rename.py">.py</a></td></tr>
+      <tr><td>Material Slots</td><td>Removes unused slots and repoints <code>.001</code> duplicates back to the original</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_material_slots.py">.py</a></td></tr>
+      <tr><td>Collection Sort</td><td>Groups objects by type, name prefix or first material</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_collection_sort.py">.py</a></td></tr>
+      <tr><td>Align &amp; Distribute</td><td>Aligns on any axis by min, centre or max, and spaces objects evenly</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_align_distribute.py">.py</a></td></tr>
+    </tbody>
+  </table>
+
+  <h2>On testing</h2>
+
+  <p>
+    Every add-on here is installed, enabled, run against real geometry and
+    unloaded again, automatically, on five Blender versions. That is 60
+    combinations per release. It is more effort than a free tool strictly
+    warrants, but it is the only way I know to honestly claim a version range.
+  </p>
+
+  <p>
+    It catches real things. The turntable tool worked fine on 3.6 and 4.2 and
+    threw on 5.x, because <code>Action.fcurves</code> stopped existing when
+    Blender restructured Actions into layers and slots in 4.4. Without the
+    matrix I would have shipped that and only found out from a bug report.
+  </p>
+
+  <footer>
+    <a href="https://github.com/tristanmuzzu">github.com/tristanmuzzu</a>
+  </footer>
+
+</main>
+</body>
+</html>
