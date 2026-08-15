@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tristan Muzzu — Blender add-ons</title>
-<meta name="description" content="Blender add-ons for hard-surface modelling and game asset pipelines.">
+<title>Tristan Muzzu, Blender add-ons</title>
+<meta name="description" content="Blender add-ons for hard-surface modelling and game asset work.">
 <style>
   :root {
     --bg: #fbfaf8;
@@ -34,7 +34,6 @@
     font-size: 1.05rem; margin: 3rem 0 .9rem; font-weight: 600;
     padding-bottom: .4rem; border-bottom: 1px solid var(--rule);
   }
-  h3 { font-size: .98rem; margin: 1.8rem 0 .4rem; font-weight: 600; }
   p { margin: 0 0 1rem; }
   a { color: var(--link); }
   .sub { color: var(--muted); margin: 0 0 1.6rem; }
@@ -59,8 +58,6 @@
     display: inline-block; padding: .5rem 1rem; border: 1px solid var(--link);
     border-radius: 3px; text-decoration: none; margin: .3rem .4rem .3rem 0;
   }
-  ul { padding-left: 1.1rem; }
-  li { margin-bottom: .3rem; }
   footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: .87rem; }
 </style>
 </head>
@@ -68,33 +65,39 @@
 <main>
 
   <h1>Tristan Muzzu</h1>
-  <p class="sub">Blender add-ons for hard-surface modelling and game asset pipelines.</p>
+  <p class="sub">Blender add-ons for hard-surface modelling and game asset work.</p>
 
   <p>
-    I write tools for the boring parts of 3D work — the panelling, the renaming,
-    the export checks. Everything here is tested against Blender 3.6 LTS, 4.2 LTS,
-    4.5 LTS, 5.0 and 5.2 before it goes out, because add-ons that quietly break on
-    a version bump are the main reason people stop trusting them.
+    I write tools for the parts of 3D work nobody enjoys. Panelling a hull by
+    hand. Renaming two hundred objects. Checking scale for the fourth time
+    because the last export came into Unity at 100x.
+  </p>
+
+  <p>
+    Everything here runs on Blender 3.6 through 5.2, and I check all five
+    versions before anything goes out. Add-ons that quietly break on a version
+    bump are the fastest way to lose people.
   </p>
 
   <h2>PanelForge</h2>
 
   <p>
-    Procedural sci-fi hull plating. It takes a hard-surface mesh and generates
-    panel layouts, recessed sections, slatted vents, raised blocks and blade fins,
-    assigned across five material slots.
+    Procedural sci-fi hull plating. Point it at a hard-surface mesh and it
+    builds panel layouts, recessed sections, slatted vents, raised blocks and
+    blade fins, spread across five material slots.
   </p>
 
   <figure>
     <img src="img/panelforge_before_after.jpg" alt="A blocked-out hull before and after PanelForge, same camera and lighting">
-    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,948 out, 0.016 s.</figcaption>
+    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,948 out, 0.016 seconds.</figcaption>
   </figure>
 
   <p>
-    The detail is placed rather than sprayed. Plate depths step in fixed
-    increments instead of drifting, detail clusters into hotspots the way real
-    hardware does, and some plating is deliberately left off so bare hull shows
-    through. Sixteen parameters, one seed, reproducible output.
+    Most greeblers spray detail evenly and you can always tell. This one steps
+    plate depths in fixed increments instead of drifting them, gathers detail
+    into hotspots the way actual hardware does, and skips some plating so bare
+    hull shows through. Sixteen parameters and a seed. Same seed, same result,
+    every time.
   </p>
 
   <figure>
@@ -102,14 +105,15 @@
     <figcaption>One mesh, four seeds.</figcaption>
   </figure>
 
-  <p class="meta">In development. Coming to Superhive.</p>
+  <p class="meta">Still working on it. Going up on Superhive when it's ready.</p>
 
   <h2>Free add-ons</h2>
 
   <p>
-    Twelve small tools I built for my own workflow and kept. MIT licensed, no
-    strings. Each is a single <code>.py</code> file — download it and use
-    <em>Edit &rarr; Preferences &rarr; Add-ons &rarr; Install</em>.
+    Twelve small ones, MIT licensed, no strings. Each is a single
+    <code>.py</code> file. Download it, then
+    <em>Edit &rarr; Preferences &rarr; Add-ons &rarr; Install</em>. The panels
+    turn up in the viewport sidebar (press <kbd>N</kbd>) under BTools.
   </p>
 
   <p>
@@ -122,35 +126,39 @@
       <tr><th>Add-on</th><th>What it does</th><th></th></tr>
     </thead>
     <tbody>
-      <tr><td>Asset Check</td><td>Pre-export validation — transforms, scale, manifold geometry, UVs — plus a mechanical auto-fix</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_asset_check.py">.py</a></td></tr>
-      <tr><td>Surface Scatter</td><td>Area-weighted scatter across a surface with slope limits and per-instance jitter</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_surface_scatter.py">.py</a></td></tr>
-      <tr><td>Quick Export</td><td>glTF or FBX with Unity and Unreal axis presets, optionally one file per object</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_quick_export.py">.py</a></td></tr>
-      <tr><td>Mesh Stats</td><td>Live triangle, n-gon, loose vertex and manifold readout with a jump-to-n-gons button</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_mesh_stats.py">.py</a></td></tr>
-      <tr><td>Auto Frame</td><td>Fits the camera to a selection by projecting real vertices, not the bounding box</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_auto_frame.py">.py</a></td></tr>
-      <tr><td>Seam by Angle</td><td>Marks UV seams on edges over a threshold, then unwraps</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_seam_by_angle.py">.py</a></td></tr>
-      <tr><td>Turntable</td><td>One-click orbit animation on a reusable pivot, linear interpolation, no loop stutter</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_turntable.py">.py</a></td></tr>
-      <tr><td>Origin Tools</td><td>Origin to bottom, centre or world zero, and drop to floor</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_origin_tools.py">.py</a></td></tr>
-      <tr><td>Batch Rename</td><td>Pattern renaming with numbering, plus find and replace, mesh data kept in sync</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_batch_rename.py">.py</a></td></tr>
-      <tr><td>Material Slots</td><td>Removes unused slots and repoints <code>.001</code> duplicates back to the original</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_material_slots.py">.py</a></td></tr>
-      <tr><td>Collection Sort</td><td>Groups objects by type, name prefix or first material</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_collection_sort.py">.py</a></td></tr>
-      <tr><td>Align &amp; Distribute</td><td>Aligns on any axis by min, centre or max, and spaces objects evenly</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_align_distribute.py">.py</a></td></tr>
+      <tr><td>Asset Check</td><td>Checks transforms, scale, manifold geometry and UVs before you export, and fixes the mechanical stuff for you</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_asset_check.py">.py</a></td></tr>
+      <tr><td>Surface Scatter</td><td>Scatters instances over a surface, weighted by face area, with a slope limit so nothing sticks to cliffs</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_surface_scatter.py">.py</a></td></tr>
+      <tr><td>Quick Export</td><td>glTF or FBX with the Unity and Unreal axis settings already right. One file per object if you want</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_quick_export.py">.py</a></td></tr>
+      <tr><td>Mesh Stats</td><td>Live triangle, n-gon, loose vertex and manifold counts, with a button that selects the n-gons for you</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_mesh_stats.py">.py</a></td></tr>
+      <tr><td>Auto Frame</td><td>Puts the camera where your selection actually fills the frame. Fits real vertices, not the bounding box</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_auto_frame.py">.py</a></td></tr>
+      <tr><td>Seam by Angle</td><td>Marks seams on anything sharper than a threshold, then unwraps</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_seam_by_angle.py">.py</a></td></tr>
+      <tr><td>Turntable</td><td>Orbit animation in one click. Reuses its pivot, linear interpolation, no stutter on the loop</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_turntable.py">.py</a></td></tr>
+      <tr><td>Origin Tools</td><td>Origin to bottom, centre or world zero. Plus drop to floor, which I use constantly</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_origin_tools.py">.py</a></td></tr>
+      <tr><td>Batch Rename</td><td>Pattern renaming with numbering, and find and replace. Keeps mesh data names in sync, which exporters care about</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_batch_rename.py">.py</a></td></tr>
+      <tr><td>Material Slots</td><td>Drops slots nothing uses and points <code>.001</code> duplicates back at the original</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_material_slots.py">.py</a></td></tr>
+      <tr><td>Collection Sort</td><td>Sorts objects into collections by type, name prefix or first material</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_collection_sort.py">.py</a></td></tr>
+      <tr><td>Align &amp; Distribute</td><td>Align on any axis by min, centre or max. Space things evenly without doing the maths</td><td class="dl"><a class="btn" href="https://github.com/tristanmuzzu/blender-tools/raw/main/addons/bt_align_distribute.py">.py</a></td></tr>
     </tbody>
   </table>
 
-  <h2>On testing</h2>
+  <h2>How I test them</h2>
 
   <p>
-    Every add-on here is installed, enabled, run against real geometry and
-    unloaded again, automatically, on five Blender versions. That is 60
-    combinations per release. It is more effort than a free tool strictly
-    warrants, but it is the only way I know to honestly claim a version range.
+    Every add-on gets installed, switched on, run against real geometry and
+    unloaded again, on all five Blender versions. That's sixty combinations
+    each time I change something. It's a lot of ceremony for free tools, but
+    it's the only way I'm willing to put a version range on something.
   </p>
 
   <p>
-    It catches real things. The turntable tool worked fine on 3.6 and 4.2 and
-    threw on 5.x, because <code>Action.fcurves</code> stopped existing when
-    Blender restructured Actions into layers and slots in 4.4. Without the
-    matrix I would have shipped that and only found out from a bug report.
+    It earns its keep. The turntable tool worked fine on 3.6 and 4.2 and blew
+    up on 5.x, because <code>Action.fcurves</code> stopped existing when
+    Blender moved Actions over to layers and slots in 4.4. Without the matrix
+    I'd have shipped it and found out from a bug report instead.
+  </p>
+
+  <p>
+    The test script is in the repo if you want to run it yourself.
   </p>
 
   <footer>
