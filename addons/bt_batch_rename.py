@@ -31,8 +31,7 @@ class BT_OT_batch_rename(Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        # Sort by current name so results are stable rather than selection-order
-        # dependent -- otherwise the same operation gives different numbering.
+        # sort by name so the numbering is the same every run
         objects = sorted(context.selected_objects, key=lambda o: o.name)
         hashes = self.pattern.count("#")
         for index, obj in enumerate(objects):

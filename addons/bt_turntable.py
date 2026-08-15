@@ -40,8 +40,7 @@ class BT_OT_turntable(Operator):
             points += [obj.matrix_world @ Vector(c) for c in obj.bound_box]
         centre = sum(points, Vector()) / len(points)
 
-        # Reuse the pivot if present, so re-running does not litter the scene
-        # with duplicates -- a common annoyance in turntable addons.
+        # reuse the pivot, otherwise re-running piles up empties
         pivot = bpy.data.objects.get(PIVOT_NAME)
         if pivot is None:
             pivot = bpy.data.objects.new(PIVOT_NAME, None)
@@ -57,13 +56,9 @@ class BT_OT_turntable(Operator):
 
         turn = -math.tau if self.clockwise else math.tau
 
-        # Linear interpolation, or the spin eases in and out and looks wrong.
-        #
-        # Set it via the NEW-KEYFRAME preference rather than walking
-        # action.fcurves afterwards: Blender 4.4+ restructured Actions into
-        # layers/slots/channelbags and `Action.fcurves` no longer exists, so
-        # the old approach raises AttributeError on 5.x. This route is stable
-        # across 3.6 through 5.2.
+        # needs linear or the spin eases in and out.
+        # setting it through the pref instead of action.fcurves because
+        # fcurves is gone in 4.4+ (Actions moved to layers/slots)
         prefs = bpy.context.preferences.edit
         saved_interp = prefs.keyframe_new_interpolation_type
         prefs.keyframe_new_interpolation_type = 'LINEAR'
@@ -77,8 +72,7 @@ class BT_OT_turntable(Operator):
 
         if self.set_range:
             scene.frame_start = 1
-            # End one frame early: frame 1 and frame N are the same pose, so
-            # including both gives a visible stutter on loop.
+            # -1 because frame 1 and frame N are the same pose
             scene.frame_end = self.frames - 1
 
         self.report({'INFO'}, f"Turntable over {self.frames} frames")

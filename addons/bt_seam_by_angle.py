@@ -47,7 +47,7 @@ class BT_OT_seam_by_angle(Operator):
             if self.clear_existing:
                 edge.seam = False
             if len(edge.link_faces) != 2:
-                # Boundary edges are already seams for unwrapping purposes.
+                # boundaries already act as seams
                 continue
             if edge.calc_face_angle(0.0) >= self.angle:
                 edge.seam = True

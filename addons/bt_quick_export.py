@@ -75,8 +75,7 @@ class BT_OT_quick_export(Operator):
         written = 0
 
         if self.separate:
-            # Restore the original selection afterwards; silently changing it
-            # is the kind of side effect that earns one-star reviews.
+            # put the selection back when we're done
             original = list(context.selected_objects)
             active = context.view_layer.objects.active
             for obj in meshes:

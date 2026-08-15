@@ -38,9 +38,7 @@ class BT_OT_auto_frame(Operator):
         scene = context.scene
         cam = scene.camera
 
-        # Sample real vertices, not bounding-box corners. A box corner is
-        # usually NOT on the silhouette of an irregular shape, so fitting the
-        # box leaves the subject floating small in frame.
+        # bound_box corners usually aren't on the silhouette, so use real verts
         points = []
         for obj in [o for o in context.selected_objects if o.type == 'MESH']:
             points += [obj.matrix_world @ v.co for v in obj.data.vertices]

@@ -75,8 +75,7 @@ class BT_OT_distribute(Operator):
 
     def execute(self, context):
         i = INDEX[self.axis]
-        # Sort by current position, so the outermost two stay put and
-        # everything between them is respaced -- the behaviour people expect.
+        # outer two stay put, everything between gets respaced
         objects = sorted(context.selected_objects,
                          key=lambda o: (_bounds(o)[0][i] + _bounds(o)[1][i]) / 2)
         first = (_bounds(objects[0])[0][i] + _bounds(objects[0])[1][i]) / 2

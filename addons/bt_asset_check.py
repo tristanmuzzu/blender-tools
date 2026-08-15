@@ -13,7 +13,7 @@ import bpy
 from bpy.types import Operator, Panel
 from mathutils import Vector
 
-# Cache so the panel does not re-run heavy checks on every redraw.
+# panels redraw constantly, so cache instead of re-checking every frame
 _RESULTS = {}
 
 

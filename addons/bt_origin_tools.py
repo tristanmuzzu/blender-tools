@@ -58,8 +58,7 @@ class BT_OT_set_origin(Operator):
                 target = Vector((0, 0, 0))
 
             cursor.location = target
-            # origin_set acts on active + selected, so isolate each object to
-            # avoid dragging every other selection to the same point.
+            # origin_set hits the whole selection, so do them one at a time
             bpy.ops.object.select_all(action='DESELECT')
             obj.select_set(True)
             context.view_layer.objects.active = obj

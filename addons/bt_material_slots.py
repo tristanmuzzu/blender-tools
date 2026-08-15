@@ -35,7 +35,7 @@ class BT_OT_clean_slots(Operator):
                 continue
             used = {p.material_index for p in obj.data.polygons}
             context.view_layer.objects.active = obj
-            # Walk backwards: removing a slot shifts every index above it.
+            # backwards, removing a slot shifts the ones above it
             for index in range(len(obj.data.materials) - 1, -1, -1):
                 if index not in used:
                     obj.active_material_index = index

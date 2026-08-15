@@ -1,8 +1,9 @@
-"""Install, enable, exercise and disable every free tool.
+"""Installs each addon, runs its operators on a real scene, unloads it.
 
-Registration is the easy half. This also RUNS each operator against real
-geometry, because an addon that registers but throws on first click is worse
-than one that fails to install -- the user has already paid attention.
+Checking that something registers isn't worth much on its own, so every tool
+gets actually used here.
+
+    blender --background --factory-startup --python test_all.py
 """
 import bpy, addon_utils, os, sys, glob, math, traceback
 

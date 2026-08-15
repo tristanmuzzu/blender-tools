@@ -55,8 +55,7 @@ class BT_OT_surface_scatter(Operator):
         bm.from_mesh(surface.data)
         bm.faces.ensure_lookup_table()
 
-        # Area-weighted face choice, otherwise small faces get as many
-        # instances as large ones and the scatter clumps visibly.
+        # weight by area, or small faces get as many instances as big ones
         faces, weights, total = [], [], 0.0
         up = Vector((0, 0, 1))
         for face in bm.faces:
@@ -85,7 +84,7 @@ class BT_OT_surface_scatter(Operator):
         for _ in range(self.count):
             face = faces[bisect.bisect_left(weights, rng.random() * total)]
             verts = [v.co for v in face.verts]
-            # Barycentric point in the first triangle of the face.
+            # random point in the first tri
             a, b, c = verts[0], verts[1], verts[2 % len(verts)]
             u, v = rng.random(), rng.random()
             if u + v > 1:
