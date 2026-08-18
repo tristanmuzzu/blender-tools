@@ -139,6 +139,25 @@
 
 <!-- /section: 2026-08-17-portfolio -->
 
+  <!-- section: 2026-08-18-portfolio -->
+  <h2>What broke between Blender 3.6 and 5.2</h2>
+
+  <p>The add-ons on this page get run on five Blenders, and doing that turns up things a single-version check never shows you. Every one of the three below had me hunting through my own code first. I measured all of it again this afternoon on 3.6.23, 4.2.23, 4.5.12, 5.0.1 and 5.2.0, so the figures below are from today rather than from my notes.</p>
+
+  <p>FBX export is dead on the 5.0.1 build my package manager ships. Any call to bpy.ops.export_scene.fbx raises AttributeError: &#x27;ExportFBX&#x27; object has no attribute &#x27;use_space_transform&#x27;, thrown from line 606 of the bundled io_scene_fbx. Here&#x27;s the part that took me ages to see. That operator declares 5 properties on 5.0.1, against 42 on 3.6.23 and 43 on the other three. It registers almost nothing, and then the exporter&#x27;s own execute() reads an option its own operator never created. The identical export writes between 26,428 and 26,764 bytes on 3.6.23, 4.2.23, 4.5.12 and 5.2.0, from the factory startup scene, no complaints. So if your export script died and you&#x27;re on a distro Blender, print len(bpy.ops.export_scene.fbx.get_rna_type().properties) before you go hunting through your own code. What I can&#x27;t tell you is whether upstream 5.0 has this. I only know this packaged 5.0.1 does and that blender.org&#x27;s 5.2.0 doesn&#x27;t.</p>
+
+  <p>Action.fcurves stops existing, and later than I had it written down. My own note said 4.4. That was wrong: 4.5.12 still hands back three F-curves quite happily, and the attribute is gone on both 5.0.1 and 5.2.0. The new layers attribute turns up at 4.5.12, so 4.5 is the one version where both APIs answer and either style of code runs. Anything that walks action.fcurves to set interpolation throws on 5.x. The turntable add-on here got fixed by leaving the Action API alone altogether: set preferences.edit.keyframe_new_interpolation_type before inserting the keys, then put it back. That runs unchanged on all five.</p>
+
+  <p>Last one is small and it bit me anyway. bpy.app.version_string is not something you can parse. 3.6.23 returns &quot;3.6.23&quot; while 4.2.23 returns &quot;4.2.23 LTS&quot;, so the suffix is on some builds and not others, and a script of mine ran int() over that last field and died. bpy.app.version gives you a tuple of integers. Use that instead.</p>
+
+  <p>None of this is exotic. It&#x27;s what falls out of running the same script on every version you claim to support, which takes six seconds on this machine for twelve add-ons across five versions and is the only reason I know any of it. PanelForge, the paid one, goes through the same five.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: 2026-08-18-portfolio -->
+
   <h2>Free add-ons</h2>
 
   <p>
