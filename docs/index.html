@@ -44,6 +44,7 @@
   }
   figure { margin: 1.2rem 0 1.6rem; }
   img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  video { width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: #000; }
   figcaption { color: var(--muted); font-size: .85rem; margin-top: .45rem; }
   table { border-collapse: collapse; width: 100%; font-size: .92rem; }
   th, td { text-align: left; padding: .5rem .6rem .5rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
@@ -106,9 +107,37 @@
   </figure>
 
   <p>
-    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge">Get PanelForge, $24</a>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
   </p>
   <p class="meta">Blender 3.6 through 5.2. GPL v3.</p>
+
+  <!-- section: 2026-08-17-portfolio -->
+  <h2>PanelForge 1.0.0</h2>
+
+  <p>New media for the product page. It&#x27;s rendered headless at 1080px, 64 samples, EEVEE, seed 3, so any of it rebuilds exactly.</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+    <figcaption>Turntable, 4s loop</figcaption>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+    <figcaption>Before and after on one hull, one seed, identical camera</figcaption>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+    <figcaption>Parameter sweep: thickness_scale from 0.15 to 2.4, same hull and seed throughout</figcaption>
+  </figure>
+
+  <p>The sweep runs the slider up and then back down, so what you&#x27;re watching is one object changing rather than a row of separate renders.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: 2026-08-17-portfolio -->
 
   <h2>Free add-ons</h2>
 
