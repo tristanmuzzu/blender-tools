@@ -8,6 +8,24 @@ bl_info = {
     "category": "Object",
 }
 
+# One tagged link, so a sale that starts here can be told from one that did not.
+# `?src=` survives referrer stripping; ops/watch_sales.py `channel_of()` reads it.
+PANELFORGE_URL = (
+    "https://tristaneer2.gumroad.com/l/panelforge?src=freetools-asset_check"
+)
+
+
+def _bt_footer(layout):
+    """Quiet footer, not a nag: one row, no pitch, below whatever the tool drew.
+
+    Somebody who installed a free add-on is not in a buying mood, and a panel
+    that shouts gets the whole repo dismissed.
+    """
+    layout.separator()
+    row = layout.row()
+    row.scale_y = 0.85
+    row.operator("wm.url_open", text="PanelForge: sci-fi panel generator", icon='URL').url = PANELFORGE_URL
+
 import bmesh
 import bpy
 from bpy.types import Operator, Panel
@@ -119,7 +137,7 @@ class BT_PT_asset_check(Panel):
     bl_region_type = 'UI'
     bl_category = "BTools"
 
-    def draw(self, context):
+    def _bt_draw_body(self, context):
         layout = self.layout
         col = layout.column(align=True)
         col.operator("object.bt_asset_check", icon='CHECKMARK')
@@ -136,6 +154,9 @@ class BT_PT_asset_check(Panel):
             for text, level in issues:
                 box.label(text=text,
                           icon='CANCEL' if level == 'ERROR' else 'INFO')
+    def draw(self, context):
+        self._bt_draw_body(context)
+        _bt_footer(self.layout)
 
 
 CLASSES = (BT_OT_asset_check, BT_OT_asset_fix, BT_PT_asset_check)

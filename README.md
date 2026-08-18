@@ -54,6 +54,18 @@ It's caught real things. The turntable worked on 3.6 and 4.2 and threw on 5.x,
 because `Action.fcurves` stopped existing when Blender moved Actions over to
 layers and slots in 4.4.
 
+## The paid one
+
+These twelve are free and stay free. The thing I sell is
+**[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**.
+It panels and greebles a hull procedurally, so you get plating, vents and fins
+laid out over a mesh instead of modelling each one. $24, same five Blender
+versions, same test suite.
+
+Every add-on above has a link to it at the bottom of its sidebar panel. That's
+the only string attached, and if you never click it the tools work exactly the
+same.
+
 ## Licence
 
 MIT. Do what you like with them.

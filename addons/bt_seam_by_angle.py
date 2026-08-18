@@ -8,6 +8,24 @@ bl_info = {
     "category": "UV",
 }
 
+# One tagged link, so a sale that starts here can be told from one that did not.
+# `?src=` survives referrer stripping; ops/watch_sales.py `channel_of()` reads it.
+PANELFORGE_URL = (
+    "https://tristaneer2.gumroad.com/l/panelforge?src=freetools-seam_by_angle"
+)
+
+
+def _bt_footer(layout):
+    """Quiet footer, not a nag: one row, no pitch, below whatever the tool drew.
+
+    Somebody who installed a free add-on is not in a buying mood, and a panel
+    that shouts gets the whole repo dismissed.
+    """
+    layout.separator()
+    row = layout.row()
+    row.scale_y = 0.85
+    row.operator("wm.url_open", text="PanelForge: sci-fi panel generator", icon='URL').url = PANELFORGE_URL
+
 import math
 
 import bmesh
@@ -82,8 +100,11 @@ class BT_PT_seam_by_angle(Panel):
     bl_region_type = 'UI'
     bl_category = "BTools"
 
-    def draw(self, context):
+    def _bt_draw_body(self, context):
         self.layout.operator("mesh.bt_seam_by_angle", icon='UV_EDGESEL')
+    def draw(self, context):
+        self._bt_draw_body(context)
+        _bt_footer(self.layout)
 
 
 CLASSES = (BT_OT_seam_by_angle, BT_PT_seam_by_angle)

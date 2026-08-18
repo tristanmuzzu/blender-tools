@@ -8,6 +8,24 @@ bl_info = {
     "category": "Object",
 }
 
+# One tagged link, so a sale that starts here can be told from one that did not.
+# `?src=` survives referrer stripping; ops/watch_sales.py `channel_of()` reads it.
+PANELFORGE_URL = (
+    "https://tristaneer2.gumroad.com/l/panelforge?src=freetools-mesh_stats"
+)
+
+
+def _bt_footer(layout):
+    """Quiet footer, not a nag: one row, no pitch, below whatever the tool drew.
+
+    Somebody who installed a free add-on is not in a buying mood, and a panel
+    that shouts gets the whole repo dismissed.
+    """
+    layout.separator()
+    row = layout.row()
+    row.scale_y = 0.85
+    row.operator("wm.url_open", text="PanelForge: sci-fi panel generator", icon='URL').url = PANELFORGE_URL
+
 import bmesh
 import bpy
 from bpy.types import Operator, Panel
@@ -68,7 +86,7 @@ class BT_PT_mesh_stats(Panel):
     bl_region_type = 'UI'
     bl_category = "BTools"
 
-    def draw(self, context):
+    def _bt_draw_body(self, context):
         layout = self.layout
         obj = context.active_object
         if obj is None or obj.type != 'MESH':
@@ -77,7 +95,9 @@ class BT_PT_mesh_stats(Panel):
 
         try:
             s = _stats(obj)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- a panel draw() that raises
+            # spams the console every redraw and can wedge the UI. Whatever
+            # the mesh did, the panel says so and keeps drawing.
             layout.label(text=f"Unavailable: {exc}", icon='ERROR')
             return
 
@@ -102,6 +122,9 @@ class BT_PT_mesh_stats(Panel):
             box.label(text="No UV layer")
         if not (s['ngons'] or s['loose'] or s['non_manifold']) and s['uvs']:
             box.label(text="Clean")
+    def draw(self, context):
+        self._bt_draw_body(context)
+        _bt_footer(self.layout)
 
 
 CLASSES = (BT_OT_select_ngons, BT_PT_mesh_stats)
