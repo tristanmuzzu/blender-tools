@@ -54,6 +54,22 @@ It's caught real things. The turntable worked on 3.6 and 4.2 and threw on 5.x,
 because `Action.fcurves` stopped existing when Blender moved Actions over to
 layers and slots in 4.4.
 
+## Write-ups
+
+Longer notes live on the site above. They're about things that bit me while
+building this lot, with the numbers I measured rather than general advice.
+
+- What broke between Blender 3.6 and 5.2: `Action.fcurves` disappearing in 4.4,
+  FBX export behaving differently on 5.0.1, and what a five-version test matrix
+  actually catches.
+- Sixteen sliders, and what each one actually does. A parameter sweep of a
+  generator, written while documenting it, which is how I found that one of my
+  own sliders had three behaviours and twelve labels.
+- Changing a generator without moving everybody's meshes: hashing vertices
+  instead of counting them, keeping a seeded random stream stable through a
+  refactor, and picking a new default so the old one lands on the same code
+  path.
+
 ## The paid one
 
 These twelve are free and stay free. The thing I sell is
