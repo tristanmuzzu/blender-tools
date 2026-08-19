@@ -166,6 +166,33 @@
 
 <!-- /section: 2026-08-18-portfolio -->
 
+  <!-- section: 2026-08-19-portfolio -->
+  <h2>Sixteen sliders, and what each one actually does</h2>
+
+  <p>I spent this morning writing the manual for PanelForge and it went badly, in the useful way. You cannot describe a setting you have not measured, and it turns out I had shipped one that does far less than its slider suggests.</p>
+
+  <p>Start with the honest part. Structural Bays is a whole number from 1 to 12 in the panel. It has three behaviours. The core computes the subdivision depth as int(log2(n)), so 1, 2 and 3 all mean one split, 4 through 7 all mean two, and 8 through 12 all mean three. On a 1.55 by 0.92 by 0.55 metre box at seed 3, that&#x27;s 72 plates, then 130, then 225, and no other outcome exists. Nine of the twelve positions do nothing at all. Nobody had caught it because nobody had swept the range and written down what came back, and a tooltip saying &quot;large forms read before small detail&quot; is true whichever step you land on. It&#x27;s getting fixed in the next release, as a real subdivision count, and that will move everybody&#x27;s seeds, which is why it needs a version number rather than a quiet patch.</p>
+
+  <p>The rest of the sweep was more cheerful, and the numbers are worth having if you build generators of your own. Everything below is the same 270 face blockout, seed 3, one parameter moved at a time, measured on Blender 5.2 this morning.</p>
+
+  <p>Subdivisions is the size dial for the entire result. At 1 you get 81 plates and 3,664 triangles, at the default 3 you get 262 and 11,388, at 6 you get 597 and 23,012. Nothing else in the panel has that kind of range, so it&#x27;s the first thing to move if the density is wrong rather than the arrangement.</p>
+
+  <p>Min Panel is the one that quietly decides whether anything happens at all. It&#x27;s the smallest plate edge allowed, in metres, and plate cutting stops when the next cut would go under it. At 0.05 you get 319 plates, at 0.10 you get 262, at 0.40 you get 39. Push it past the size of your largest face and you get nothing, which is the single most common way a tool like this appears broken when it&#x27;s working exactly as told. That&#x27;s why the operator reports the number it needs rather than failing silently.</p>
+
+  <p>Detail chances interact more than you&#x27;d guess, because they compete for the same candidate plates. Vents at 0.0 gives 339 plain plates and no vents. At the default 0.20 you get 74 vents. At 1.0 you get 314 vents, 30 plates and something that looks like a radiator. Fins are the only detail that break the silhouette, so they&#x27;re the ones to be careful with: 0.06 gives 28 fins, and 0.5 gives 193 and buries the shape underneath them.</p>
+
+  <p>Depth Scale surprised me by being completely safe. It multiplies how far plates stand off the surface and touches nothing else, so 0.15, 1.0 and 2.4 all produce the same 262 plates and the same 11,388 triangles at three different reliefs. Once you have a layout you like, that&#x27;s the slider you can play with without losing it.</p>
+
+  <p>Two things I&#x27;d take away from this if I were writing my own greebler. First, any parameter you pass through a rounding function needs its real steps exposed in the interface, or your slider is lying and you won&#x27;t find out until somebody documents it. Second, detail sprayed evenly is what makes procedural work look procedural, so leave some of it off on purpose. The default here skips 7% of plates, and the bare hull showing through does more for the result than any of the detail settings do.</p>
+
+  <p>The manual with all of this in it ships inside the zip and lives on the product page. If you want the add-on that produced the numbers, it&#x27;s here.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: 2026-08-19-portfolio -->
+
   <h2>Free add-ons</h2>
 
   <p>
