@@ -217,6 +217,33 @@
 
 <!-- /section: 2026-08-19-portfolio -->
 
+  <!-- section: changing-a-generator-without-moving-everybody-s-meshes -->
+  <h2>Changing a generator without moving everybody&#x27;s meshes</h2>
+
+  <p>Yesterday I wrote up a slider in my own add-on that turned out to have three settings wearing twelve labels. Structural Bays runs 1 to 12, the core fed it through int(log2(n)) to get a recursion depth, and so 1, 2 and 3 all did the same thing, 4 through 7 all did the same thing, and 8 through 12 all did the same thing. Nine of the twelve positions were decoration. Today I fixed it. The fix took about twenty minutes and the part that took the rest of the afternoon was proving I hadn&#x27;t moved anybody&#x27;s existing output, which is the bit worth writing down.</p>
+
+  <p>Here&#x27;s the problem with touching a procedural generator once it&#x27;s out. People have files. If the same seed and the same settings stop producing the same mesh, the first anyone hears about it is that the ship they parked last month has quietly become a different ship. Blender won&#x27;t warn them. There&#x27;s no diff to read. So any change to the guts of one of these needs an answer to &quot;what moved&quot;, and the answer has to be a measurement rather than a feeling.</p>
+
+  <p>Three things made that answerable, and none of them are specific to my add-on.</p>
+
+  <p>The first is to hash the vertices rather than count them. I ran the whole 1 to 12 sweep before the change and after it, and for each run I recorded the stats dictionary plus a SHA-256 over every vertex coordinate at six decimal places, truncated to sixteen characters so it fits in a table. That last bit matters more than it sounds. Before the change, settings 1, 2 and 3 all reported 262 plates and 11,388 triangles, which on its own only tells you three runs landed on the same counts. Counts collide. The hash 2fb72b58e395fee9 appearing three times tells you they&#x27;re the same mesh, vertex for vertex, and that&#x27;s the claim I actually wanted to make. I&#x27;ve been burned by counts on this project before: an early version of this generator passed every numeric gate I had and rendered as spikes shooting into space.</p>
+
+  <p>The second is to leave the random number generator alone until you know you&#x27;re going to use it. The old splitting function checked its rectangle for size, then drew a random split position, then checked whether the split was legal. When it wasn&#x27;t legal it returned the rectangle unsplit, having already consumed a number from the stream. Every seed is a stream, and one extra draw shifts everything downstream of it. My rewrite pulls the &quot;is this rectangle even big enough&quot; test in front of the draw, so a rectangle that can&#x27;t divide costs nothing and the sequence stays where it was. If you&#x27;re refactoring anything seeded, that ordering is the thing to check first. It&#x27;s invisible in a diff review and it changes every result.</p>
+
+  <p>The third is the one I&#x27;m pleased with. The old default was 3, which log2 collapsed to one split. The new code splits to a literal count, so a default of 2 performs exactly one split, same rectangle, same single draw from the same stream. Pick the new default to land on the old code path and the default mesh doesn&#x27;t move at all. I checked rather than assumed: hash 2fb72b58e395fee9 before and after, 262 plates, 74 vents, 28 fins, 18 risers, 50 greebles, 11,388 triangles, 7,120 vertices, 5,106 faces, all identical. Everything I&#x27;ve published, the store images and the demo clip and the figures in the manual, was made at defaults, so none of it needed regenerating. That was luck as much as planning. If my images had used a hand-set value I&#x27;d have spent this evening re-rendering. What I can&#x27;t do is protect a file where somebody set the thing to 7 by hand, because 7 used to be an alias for one of the three steps and now it isn&#x27;t, so that mesh does move and the changelog says so in as many words.</p>
+
+  <p>What the setting does now, measured on a 1.55 by 0.92 by 0.55 metre box at seed 3: settings 1 through 12 give 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 64 and 66 bays. Six faces, so it&#x27;s six times the setting until the faces run out of room somewhere past 10 and it caps. Plate counts go 38, 69, 96, 120, 164, 181, 205, 222, 228, 234, 248, 260. On the five-part hull I use for the listing renders, all twelve settings produce twelve distinct vertex hashes, where before there were three.</p>
+
+  <p>Then a regression test, and I made it fail before I trusted it. This project has been wrong six times about a green check that had no way to go red, mostly because Blender exits 0 even when a --python script dies with an unhandled exception. So the new case sweeps bays 1 through 8 and asserts every step increases, and before committing I put the log2 line back and watched it print &quot;flat steps in [12, 12, 12, 18, 18, 18, 18, 24]&quot; and drop the suite to 17 of 18. Then I put it back. A check you&#x27;ve only ever seen pass is a check you&#x27;re guessing about.</p>
+
+  <p>The suite is 18 edge cases now, run on 3.6.23, 4.2.23, 4.5.12, 5.0.1 and 5.2.0, which is 90 runs. All green. The one thing I can&#x27;t tell you is whether anyone would have noticed the original bug on their own, because nobody has bought this yet.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: changing-a-generator-without-moving-everybody-s-meshes -->
+
   <h2>Free add-ons</h2>
 
   <p>
