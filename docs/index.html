@@ -53,6 +53,8 @@
   }
   figure { margin: 1.2rem 0 1.6rem; }
   img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  pre { background: var(--card, #f4f4f2); border: 1px solid var(--rule); padding: .8rem .9rem; overflow-x: auto; margin: 0 0 1.2rem; }
+  pre code { font-size: .84em; line-height: 1.45; }
   video { width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: #000; }
   figcaption { color: var(--muted); font-size: .85rem; margin-top: .45rem; }
   table { border-collapse: collapse; width: 100%; font-size: .92rem; }
@@ -286,6 +288,58 @@
   </p>
 
 <!-- /section: two-numbers-for-the-same-thing-and-neither-of-them-was-right -->
+
+  <!-- two-numbers-for-the-same-thing-and-neither-of-them-was-right -->
+  <h2 id="two-numbers-for-the-same-thing-and-neither-of-them-was-right">Two numbers for the same thing, and neither of them was right</h2>
+
+  <p>This morning I was about to publish a video description that said my add-on plates a hull in about 22 milliseconds. The product page for the same add-on, describing the same operation on the same mesh, said 0.016 seconds. Both numbers had an evidence row behind them in the repo. Both said &quot;measured&quot;. They disagree by a factor of two, and I had been looking straight past that for five days.</p>
+
+  <p>So I stopped and measured it properly, and the interesting part is not the answer. It&#x27;s that neither published number was the answer.</p>
+
+  <p>Here is what the measurement actually looks like. Time the function, not the operator, because the operator wrapper drags in depsgraph work that has nothing to do with the thing you are claiming:</p>
+
+  <pre><code>import time
+from panelforge.core import PanelParams, panelize
+
+times = []
+for i in range(25):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    obj = build_hull()
+    t0 = time.perf_counter()
+    panelize(obj.data, PanelParams(seed=3))
+    times.append(time.perf_counter() - t0)
+times.sort()
+print(times[len(times) // 2] * 1000)</code></pre>
+
+  <p>Rebuilding the scene inside the loop matters. If you build once and generate twenty-five times you are measuring the second run onwards against a mesh that already has plating on it, which is a different job.</p>
+
+  <p>The result, on the 270 face hull the product images were made from, at seed 3:</p>
+
+  <p>Blender 5.2.0, three separate runs of that script: median 29.61 ms, then 29.99, then 23.95. Blender 4.2.23: median 22.10 ms. The fastest single sample across all of it was 22.09 ms, and the slowest was 46.49.</p>
+
+  <p>So 22 milliseconds is the floor. Not the typical case, the floor. And 16 milliseconds is below every single hull sample I have ever taken on this machine.</p>
+
+  <p>Where did 16 come from, then? Almost certainly a cube. A plain 2m cube through the same function is 6.56 ms on 5.2.0 and 4.76 ms on 4.2.23, and somewhere in the first week I timed one and wrote the number into a sentence describing an 11,388 triangle ship module. The evidence row I wrote at the time recorded the figure, the sample count and the Blender version. It did not record what I ran it on. That omission is the whole bug.</p>
+
+  <p>Four things I would now do differently, and three of them are about writing the claim rather than taking the measurement.</p>
+
+  <p>Name the input in the same breath as the number. On its own, &quot;0.016 s&quot; decorates a sentence without committing to anything. &quot;0.016 s on a 6 face cube&quot; commits, and you can see at a glance that it does not support a sentence about a ship module.</p>
+
+  <p>Take the range, not the median. My three runs on one version and one machine spread 24 to 30 ms, which is about 25% of the value, and all that changed between them was what else the laptop was doing. A single median presented as the number implies a precision that is not there. Two of my three runs would have made a liar out of the third.</p>
+
+  <p>Watch the direction of the rounding. This is the one I got properly wrong. I had a note in the repo saying the copy &quot;rounds up, which is the safe direction&quot;, and for a duration that is true: saying something takes longer than it does can only disappoint someone upward. But I was not rounding a duration, I was quoting a speed, and rounding a speed up is the unsafe direction. Same number, opposite sign, and the note had been sitting there being reassuring about it since launch.</p>
+
+  <p>Compare your claims against each other as well as against reality. The check that found this was not a test and could not have been. It was two sentences I had written, on two different surfaces, sitting next to each other for the first time. Nothing in a test suite can tell you that the manual and the store page disagree, because both are outside it.</p>
+
+  <p>What I cannot tell you is which mesh the original 14.3 ms reading came from, because I did not write it down and the run is gone. The cube is the best guess and it fits, but it is a guess, and the honest version of this post says so rather than presenting the reconstruction as a finding.</p>
+
+  <p>The manual now says 22 to 30 milliseconds and explains the spread. The store page says the same. The FAQ entry that used to quote the fast number now says where that number probably came from. All of that is worse copy in the marketing sense and better copy in every sense that matters, and it took about forty minutes, most of which was measuring rather than writing.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /two-numbers-for-the-same-thing-and-neither-of-them-was-right -->
 
   <h2>Free add-ons</h2>
 
