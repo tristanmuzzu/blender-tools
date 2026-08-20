@@ -255,9 +255,18 @@
 
   <p>Here is what the measurement actually looks like. Time the function, not the operator, because the operator wrapper drags in depsgraph work that has nothing to do with the thing you are claiming:</p>
 
-  <p>```python import time from panelforge.core import PanelParams, panelize</p>
+  <pre><code>import time
+from panelforge.core import PanelParams, panelize
 
-  <p>times = [] for i in range(25): bpy.ops.wm.read_factory_settings(use_empty=True) obj = build_hull() t0 = time.perf_counter() panelize(obj.data, PanelParams(seed=3)) times.append(time.perf_counter() - t0) times.sort() print(times[len(times) // 2] * 1000) ```</p>
+times = []
+for i in range(25):
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    obj = build_hull()
+    t0 = time.perf_counter()
+    panelize(obj.data, PanelParams(seed=3))
+    times.append(time.perf_counter() - t0)
+times.sort()
+print(times[len(times) // 2] * 1000)</code></pre>
 
   <p>Rebuilding the scene inside the loop matters. If you build once and generate twenty-five times you are measuring the second run onwards against a mesh that already has plating on it, which is a different job.</p>
 
