@@ -299,6 +299,108 @@ print(times[len(times) // 2] * 1000)</code></pre>
 <!-- /section: two-numbers-for-the-same-thing-and-neither-of-them-was-right -->
 
 
+  <!-- section: five-fins-read-as-a-radiator-two-read-as-a-corridor -->
+  <h2 id="five-fins-read-as-a-radiator-two-read-as-a-corridor">Five fins read as a radiator. Two read as a corridor.</h2>
+
+  <p>I spent three versions of a modular corridor kit failing the same rubric row, and the fix in the end was deleting three quarters of the geometry I had just added. Here&#x27;s the measurement, because the lesson isn&#x27;t obvious and I didn&#x27;t see it until I rendered the thing at the size a store actually shows it.</p>
+
+  <p>## The row that would not move</p>
+
+  <p>I score every asset against five criteria before it ships, 1 to 5 each, and one of them is silhouette: is this readable as a black shape at thumbnail size? My corridor module scored 2 on that row in v1 and 2 again in v2. Everything else went up. v1 was 8 out of 25, v2 was 15, and the silhouette row sat there, because the outside of the module was a bare rectangular trough with a constant profile along its length. Inside, it looked like a corridor. Outside, it was a bar.</p>
+
+  <p>So v3 was supposed to fix exactly that. I chamfered the roof, chamfered the base, pulled the floor and ceiling slabs in by 25cm so they weren&#x27;t the widest thing any more, and put an exterior fin at every one of the five structural frames, standing full height, reaching past the slabs to the module edge, with the tops rising 22cm above the roof so the top edge would have a rhythm.</p>
+
+  <p>Six of six hard gates. 540 triangles. Every version of Blender from 3.6 to 5.2. Seam gap of 0.0 across a four-module run, measured off world-space vertex extents rather than assumed from the 4m spacing.</p>
+
+  <p>It scored 17 out of 25 and it looked like a heat exchanger.</p>
+
+  <p>## Rendering the actual question</p>
+
+  <p>Here&#x27;s the part I&#x27;d been getting wrong for two versions. The silhouette row asks about a black shape at thumbnail size, and I had been scoring it by looking at a lit three-quarter render at 1400x900 and imagining. That&#x27;s a different question, and imagining is where the answer comes from if you don&#x27;t render it.</p>
+
+  <p>So I added a shot to the rig that asks the question literally. Every material replaced with black emission, world set to white, output at 240x200:</p>
+
+  <pre><code>flat = bpy.data.materials.new(&quot;SIL&quot;)
+flat.use_nodes = True
+nt = flat.node_tree
+for n in list(nt.nodes):
+    if n.type != &quot;OUTPUT_MATERIAL&quot;:
+        nt.nodes.remove(n)
+emit = nt.nodes.new(&quot;ShaderNodeEmission&quot;)
+emit.inputs[0].default_value = (0, 0, 0, 1)
+nt.links.new(emit.outputs[0], nt.nodes[&quot;Material Output&quot;].inputs[0])
+for o in objs:
+    o.data.materials.clear()
+    o.data.materials.append(flat)</code></pre>
+
+  <p>It costs 3.5 to 4.0 seconds in EEVEE, three runs, and that&#x27;s the whole process: Blender starting up, building the mesh and rendering. At 240px, v3&#x27;s five fins per module were a comb: five teeth at an 80cm pitch, and the gaps between them closed up completely under the downsample. The fins were there. The information they carried was not.</p>
+
+  <p>## The number was the count</p>
+
+  <p>Both rows still under 4 had one cause between them, and it wasn&#x27;t the shape of the fins or their depth or their taper. It was how many there were.</p>
+
+  <p>Five plates evenly spaced along a three-metre flank is a heat sink. That&#x27;s what a row of evenly spaced plates over a surface is, and calling them structural ribs in the code doesn&#x27;t change what a person sees. It&#x27;s also textbook uniform randomness, bolts every 10cm at identical spacing, arriving as the largest feature on the piece, in the same version where I&#x27;d carefully removed that pattern from everywhere else.</p>
+
+  <p>I went to two per module. Always including the heavy arch frame, and the second one chosen with a minimum spacing of two frame slots, cyclic, so that two modules tiled together never end up with a pair 80cm apart across the seam. The survivors are nearly twice as wide, since they&#x27;re carrying the visual load the five used to share, and the arch&#x27;s fin rises 78cm above the roof against 46cm for the other, so a tiled run has one tall accent and one short one per module instead of five identical teeth.</p>
+
+  <p>Silhouette went 3 to 4. Detail placement went 3 to 4, because the same five plates that read as sprayed now read as placed, and with three of them gone the flank plating and the shoulder rail underneath are actually visible. 17 out of 25 to 19.</p>
+
+  <p>The triangle count went down.</p>
+
+  <p>## The check I wrote caught my own first attempt</p>
+
+  <p>The spacing rule needed to be cyclic and I didn&#x27;t write it that way first. My first version picked any frame that wasn&#x27;t the arch and wasn&#x27;t the missing one, and seed 1 immediately produced fins on slots 0 and 1, which are adjacent: 80cm apart, which is the exact v3 spacing with three of the five deleted.</p>
+
+  <p>The assertion I&#x27;d written ten minutes earlier caught it on the first seed I tried:</p>
+
+  <pre><code>step = kit.MODULE / kit.RIBS
+for s in range(1, 60):
+    f = kit.plan(s)[&quot;fins&quot;]
+    gap = (f[1] - f[0]) * step
+    wrap = (kit.RIBS - f[1] + f[0]) * step
+    assert min(gap, wrap) &gt;= step * 2, \
+        f&quot;seed {s}: fins {f} are {min(gap, wrap):.2f}m apart&quot;</code></pre>
+
+  <p>The `wrap` term is the one that matters and it&#x27;s the one I&#x27;d have left out. Slot 4 and slot 0 are neighbours once you put two modules end to end, so the distance is cyclic, and a rule that only measures `f[1] - f[0]` passes a pair that looks fine alone and doubles up at every seam.</p>
+
+  <p>## A hole in a wall is still manifold</p>
+
+  <p>One more, from the same week, and it&#x27;s the sharper lesson.</p>
+
+  <p>I generalised the module so a corner, a T junction and a dead end all come out of one code path, the only difference being which edges the corridor opens on. The first version built one wall band per closed side and nothing per open side, reasoning that the perpendicular bands would cover the corners.</p>
+
+  <p>True for a straight, where both perpendicular sides are closed. False for a corner. The region from x 1.1 to 1.75, y -2.0 to -1.1 belonged to no band at all, so the corner shipped with no wall on the flank it doesn&#x27;t open by. A hole in the corridor at the one place the corridor isn&#x27;t turning.</p>
+
+  <p>All six hard gates passed it. Scale passed, transforms passed, manifold passed, UVs passed, triangle budget passed, and the glTF round trip passed. Of course they did. A hole in a wall is still manifold, still the right size, still has UVs and still round trips.</p>
+
+  <p>I found it by rendering a contact sheet and looking at it.</p>
+
+  <p>Then a second one, one layer down: the skirting stopped dead at the module edge on a corner, because trim was emitted per closed side and an open side still has a stub of wall at each end of its opening. Six of six gates again. Trim that ends early is still manifold too. That one was caught by a check I&#x27;d added the same morning, which compares the corridor cross-section each piece presents at a shared edge, and it named it precisely: 2 points present on the straight and absent on the corner.</p>
+
+  <p>## What I&#x27;d take from it</p>
+
+  <p>Render the question you&#x27;re actually asking. If the criterion is about a thumbnail, render a thumbnail. Four seconds of EEVEE told me something that two versions of staring at a beauty render had not.</p>
+
+  <p>And a full set of green gates tells you the mesh is well formed. It tells you nothing whatsoever about whether the thing is right. I&#x27;ve now had that lesson four times on this project, most memorably from an asset that passed 456 panels, 0 non-manifold edges and 25,120 triangles while rendering as spikes shooting into space.</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: five-fins-read-as-a-radiator-two-read-as-a-corridor -->
+
   <h2>Free add-ons</h2>
 
   <p>
