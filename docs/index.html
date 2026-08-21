@@ -124,7 +124,7 @@
 
   <figure>
     <img src="img/panelforge_before_after.jpg" alt="A blocked-out hull before and after PanelForge, same camera and lighting">
-    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,948 out, 0.016 seconds.</figcaption>
+    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,948 out, in 22 to 30 milliseconds.</figcaption>
   </figure>
 
   <p>
@@ -144,6 +144,44 @@
     <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
   </p>
   <p class="meta">Blender 3.6 through 5.2. GPL v3.</p>
+
+  <h2 id="sci-fi-corridor-kit">Sci-Fi Corridor Kit</h2>
+
+  <p>
+    Five modular corridor pieces that tile on a 4 metre grid: a straight, a 90
+    degree corner, a T junction, a dead end, and a bulkhead doorway you walk
+    through. They ship as .blend and .glb, and the Python script that generated
+    them is in the zip.
+  </p>
+
+  <figure>
+    <img src="img/kit_layout.jpg" alt="Seven corridor modules assembled into an L with a side branch, lit from above and to the left">
+    <figcaption>Seven modules, five piece types, one assembly. 540 to 696 triangles each.</figcaption>
+  </figure>
+
+  <p>
+    The zip carries a hard-gate report generated from the exact files you
+    download, not from a rebuild: real-world scale, applied transforms,
+    manifold geometry with no interior faces, UVs, triangle budget, and a glTF
+    round trip that preserves the triangle count. Thirty checks across five
+    pieces. Every piece also presents the same 17 point cross-section at a
+    shared edge, so the floor line, the ceiling line and the skirting run
+    straight through a join instead of stepping.
+  </p>
+
+  <p>
+    Change the seed and you get a different module: a different frame carrying
+    the heavy arch ring, a different one missing, a vent on the other wall. Six
+    seeds, six different meshes, and the same seed always gives the same one
+    back. Nothing the seed touches goes near a seam.
+  </p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get the Corridor Kit, $19</a>
+  </p>
+  <p class="meta">Blender 3.6 through 5.2, and that means the files open on all
+  five rather than just that the script runs on all five. Meshes are
+  royalty-free for commercial work, the two scripts are GPL v3.</p>
 
   <!-- section: 2026-08-17-portfolio -->
   <h2 id="panelforge-1-0-0">PanelForge 1.0.0</h2>
