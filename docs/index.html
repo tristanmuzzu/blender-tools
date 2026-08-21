@@ -53,6 +53,7 @@
   }
   figure { margin: 1.2rem 0 1.6rem; }
   img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  h3 { font-size: .95rem; font-weight: 600; margin: 1.8rem 0 .55rem; letter-spacing: -.005em; }
   pre { background: var(--card, #f4f4f2); border: 1px solid var(--rule); padding: .8rem .9rem; overflow-x: auto; margin: 0 0 1.2rem; }
   pre code { font-size: .84em; line-height: 1.45; }
   video { width: 100%; height: auto; display: block; border: 1px solid var(--rule); background: #000; }
@@ -342,7 +343,7 @@ print(times[len(times) // 2] * 1000)</code></pre>
 
   <p>I spent three versions of a modular corridor kit failing the same rubric row, and the fix in the end was deleting three quarters of the geometry I had just added. Here&#x27;s the measurement, because the lesson isn&#x27;t obvious and I didn&#x27;t see it until I rendered the thing at the size a store actually shows it.</p>
 
-  <p>## The row that would not move</p>
+  <h3>The row that would not move</h3>
 
   <p>I score every asset against five criteria before it ships, 1 to 5 each, and one of them is silhouette: is this readable as a black shape at thumbnail size? My corridor module scored 2 on that row in v1 and 2 again in v2. Everything else went up. v1 was 8 out of 25, v2 was 15, and the silhouette row sat there, because the outside of the module was a bare rectangular trough with a constant profile along its length. Inside, it looked like a corridor. Outside, it was a bar.</p>
 
@@ -352,7 +353,7 @@ print(times[len(times) // 2] * 1000)</code></pre>
 
   <p>It scored 17 out of 25 and it looked like a heat exchanger.</p>
 
-  <p>## Rendering the actual question</p>
+  <h3>Rendering the actual question</h3>
 
   <p>Here&#x27;s the part I&#x27;d been getting wrong for two versions. The silhouette row asks about a black shape at thumbnail size, and I had been scoring it by looking at a lit three-quarter render at 1400x900 and imagining. That&#x27;s a different question, and imagining is where the answer comes from if you don&#x27;t render it.</p>
 
@@ -373,7 +374,7 @@ for o in objs:
 
   <p>It costs 3.5 to 4.0 seconds in EEVEE, three runs, and that&#x27;s the whole process: Blender starting up, building the mesh and rendering. At 240px, v3&#x27;s five fins per module were a comb: five teeth at an 80cm pitch, and the gaps between them closed up completely under the downsample. The fins were there. The information they carried was not.</p>
 
-  <p>## The number was the count</p>
+  <h3>The number was the count</h3>
 
   <p>Both rows still under 4 had one cause between them, and it wasn&#x27;t the shape of the fins or their depth or their taper. It was how many there were.</p>
 
@@ -385,7 +386,7 @@ for o in objs:
 
   <p>The triangle count went down.</p>
 
-  <p>## The check I wrote caught my own first attempt</p>
+  <h3>The check I wrote caught my own first attempt</h3>
 
   <p>The spacing rule needed to be cyclic and I didn&#x27;t write it that way first. My first version picked any frame that wasn&#x27;t the arch and wasn&#x27;t the missing one, and seed 1 immediately produced fins on slots 0 and 1, which are adjacent: 80cm apart, which is the exact v3 spacing with three of the five deleted.</p>
 
@@ -401,7 +402,7 @@ for s in range(1, 60):
 
   <p>The <code>wrap</code> term is the one that matters and it&#x27;s the one I&#x27;d have left out. Slot 4 and slot 0 are neighbours once you put two modules end to end, so the distance is cyclic, and a rule that only measures <code>f[1] - f[0]</code> passes a pair that looks fine alone and doubles up at every seam.</p>
 
-  <p>## A hole in a wall is still manifold</p>
+  <h3>A hole in a wall is still manifold</h3>
 
   <p>One more, from the same week, and it&#x27;s the sharper lesson.</p>
 
@@ -415,7 +416,7 @@ for s in range(1, 60):
 
   <p>Then a second one, one layer down: the skirting stopped dead at the module edge on a corner, because trim was emitted per closed side and an open side still has a stub of wall at each end of its opening. Six of six gates again. Trim that ends early is still manifold too. That one was caught by a check I&#x27;d added the same morning, which compares the corridor cross-section each piece presents at a shared edge, and it named it precisely: 2 points present on the straight and absent on the corner.</p>
 
-  <p>## What I&#x27;d take from it</p>
+  <h3>What I&#x27;d take from it</h3>
 
   <p>Render the question you&#x27;re actually asking. If the criterion is about a thumbnail, render a thumbnail. Four seconds of EEVEE told me something that two versions of staring at a beauty render had not.</p>
 
@@ -448,7 +449,7 @@ for s in range(1, 60):
 
   <p>The files were fine. The claim was fine on its own terms. The thing joining them was wrong, and I&#x27;d built a five-version test matrix that could not see it.</p>
 
-  <p>## Two claims that sound like one</p>
+  <h3>Two claims that sound like one</h3>
 
   <p><code>.blend</code> is forward compatible and not backward compatible. A file saved by 3.6 opens in 5.2. A file saved by 5.0 does not open in 3.6, and the failure isn&#x27;t soft. You don&#x27;t get a mesh with missing materials, you get a refusal to parse.</p>
 
@@ -460,13 +461,13 @@ for s in range(1, 60):
 
   <p>Those are different sentences, and I&#x27;d been reading the first one as evidence for the second for about a week. The generator ran on 3.6 quite happily. Nobody ever asked 3.6 to open the output, because the output was written by whichever Blender happened to be on <code>PATH</code>, which is 5.0.1 here.</p>
 
-  <p>## What it costs</p>
+  <h3>What it costs</h3>
 
   <p>For a pack, the whole cost. A buyer on 3.6 downloads the zip, double-clicks a file, gets &quot;not a blend file&quot;, and reasonably concludes the product is broken. They can&#x27;t tell the difference between an incompatible save and a corrupt upload. That&#x27;s a refund and a one-star review, and the listing told them it would work.</p>
 
   <p>For a free tool it&#x27;s just as bad and slower to find out about, because the person who hits it usually assumes they&#x27;ve done something wrong.</p>
 
-  <p>## The fix is one line, and the check is the real work</p>
+  <h3>The fix is one line, and the check is the real work</h3>
 
   <p>Export from the oldest version you claim. That&#x27;s it:</p>
 
@@ -493,7 +494,7 @@ for s in range(1, 60):
 
   <p>The probe itself prints the mesh: triangle count, dimensions, lowest z, UV layers, material slots. The first version to open a piece sets the reference and every later version is compared to that, rather than to numbers typed into the test. If 4.2 opens the file but loses a material slot, that&#x27;s a failure too, and a version-by-version equality check catches it without me having to know in advance what it would look like.</p>
 
-  <p>## Make it fail before you believe it</p>
+  <h3>Make it fail before you believe it</h3>
 
   <p>I ran the new test against the broken build first, and that&#x27;s the only reason I trust it:</p>
 
@@ -509,7 +510,7 @@ RESULT 25/25 opened identically, 0 failed</code></pre>
 
   <p>A green test you have never seen go red is not evidence. I&#x27;ve been wrong about that six times on this project, most of them the same shape: an instrument reporting passes it had no ability to detect failures in.</p>
 
-  <p>## The general version</p>
+  <h3>The general version</h3>
 
   <p>Every claim on a store page is a claim about the artefact the buyer downloads, and most test suites are claims about the source. The gap between those is where this lives, and it isn&#x27;t only version support. It&#x27;s the zip that ships without the manual because the build excluded it by name and the file got renamed. It&#x27;s the install test with the version number hardcoded, still reporting 5/5 against last release. I&#x27;ve shipped both of those.</p>
 
@@ -540,7 +541,7 @@ RESULT 25/25 opened identically, 0 failed</code></pre>
 
   <p>The answer is less than I would like, and the gap is worth knowing about if you gate your own assets this way.</p>
 
-  <p>## The break</p>
+  <h3>The break</h3>
 
   <p>A module is 4m square with a 2.2m doorway. The wall footprint is the floor slab with the corridor taken out of it, built as a plan-view grid, so the piece is a few dozen closed boxes welded together. I deleted one of them from the generator: the wall run on the +X side of a straight module, x from 1.10 out to 1.75, spanning the full 2.2m of the opening in y.</p>
 
@@ -557,7 +558,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <p>Six for six.</p>
 
-  <p>## Why every one of them says yes</p>
+  <h3>Why every one of them says yes</h3>
 
   <p>Once you look at what each gate measures, none of them had a chance.</p>
 
@@ -569,7 +570,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <p>I tried the same trick on the corner piece and got 564 tris and another six passes.</p>
 
-  <p>## The check I wrote for a different bug also misses it</p>
+  <h3>The check I wrote for a different bug also misses it</h3>
 
   <p>The kit has a cross-piece check that I&#x27;m quite fond of. Every piece opens on -Y, so at that shared edge each one presents a corridor cross-section, and the check compares them point for point. Floor, ceiling, both wall faces, the skirting. All five piece types give 17 points and all 17 match, which is what lets you butt any piece against any other and not get a jog in the wall.</p>
 
@@ -577,7 +578,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <p>Of course it does. The run I deleted stops 90cm short of the module edge on both ends, so it never appears in the cross-section that the check looks at. I wrote that check after shipping trim that stopped dead at a seam, and it&#x27;s good at that. It sees the mouth of the corridor. It has nothing to say about the middle.</p>
 
-  <p>## What found the real one</p>
+  <h3>What found the real one</h3>
 
   <p>This was a reproduction. The bug it&#x27;s modelled on was real and it was in the corner piece: no wall at all on the flank the corner doesn&#x27;t turn towards. Six gates passed on it too.</p>
 
@@ -587,7 +588,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <p>The oldest version of this lesson on this project cost me a whole product version. My hull plating generator&#x27;s first build reported 456 panels, zero non-manifold edges and 25,120 triangles, every number green, and rendered as spikes shooting into space.</p>
 
-  <p>## Where that leaves the report</p>
+  <h3>Where that leaves the report</h3>
 
   <p>I&#x27;m not going to pretend the fix is &quot;add a coverage gate&quot;, because I haven&#x27;t written one. It&#x27;s the obvious thing: rasterise the wall footprint the piece should have and check the geometry covers it. I know roughly how I&#x27;d do it and it isn&#x27;t in the build yet.</p>
 
@@ -596,7 +597,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
   <p>So the report in the zip means what it says and no more: these pieces are manifold, sit on the ground, have applied transforms, have usable UVs, fit the budget and survive a glTF round trip. It does not mean somebody looked at them. That part is me, on a contact sheet, every version, and I don&#x27;t think I&#x27;d trust a pack where nobody had done it.</p>
 
   <p>
-    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get PanelForge, $24</a>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get the Corridor Kit, $19</a>
   </p>
 
 <!-- /section: a-corridor-with-one-wall-missing-passes-every-hard-gate -->
