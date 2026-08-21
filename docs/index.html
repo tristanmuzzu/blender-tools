@@ -401,6 +401,100 @@ for s in range(1, 60):
 
 <!-- /section: five-fins-read-as-a-radiator-two-read-as-a-corridor -->
 
+  <!-- section: your-blend-does-not-open-in-the-version-your-store-page-clai -->
+  <h2 id="your-blend-does-not-open-in-the-version-your-store-page-clai">Your .blend does not open in the version your store page claims</h2>
+
+  <p>I nearly shipped an asset pack whose product page said &quot;Blender 3.6 and up&quot; and whose files Blender 3.6 refuses to read. Not &quot;opens with warnings&quot;. Refuses:</p>
+
+  <pre><code>Error: Failed to read blend file &#x27;.../kit_corner.blend&#x27;, not a blend file</code></pre>
+
+  <p>The files were fine. The claim was fine on its own terms. The thing joining them was wrong, and I&#x27;d built a five-version test matrix that could not see it.</p>
+
+  <p>## Two claims that sound like one</p>
+
+  <p><code>.blend</code> is forward compatible and not backward compatible. A file saved by 3.6 opens in 5.2. A file saved by 5.0 does not open in 3.6, and the failure isn&#x27;t soft. You don&#x27;t get a mesh with missing materials, you get a refusal to parse.</p>
+
+  <p>Here&#x27;s the trap. I have a script that runs any Python file through every Blender I&#x27;ve got installed, 3.6.23, 4.2.23, 4.5.12, 5.0.1 and 5.2.0, and reads the traceback out of stdout because Blender exits 0 even when a <code>--python</code> script dies. It&#x27;s a good rig. It had been green for weeks.</p>
+
+  <p>What it proves is that **the generator runs on five versions**.</p>
+
+  <p>What the store page says is that **the files work on five versions**.</p>
+
+  <p>Those are different sentences, and I&#x27;d been reading the first one as evidence for the second for about a week. The generator ran on 3.6 quite happily. Nobody ever asked 3.6 to open the output, because the output was written by whichever Blender happened to be on <code>PATH</code>, which is 5.0.1 here.</p>
+
+  <p>## What it costs</p>
+
+  <p>For a pack, the whole cost. A buyer on 3.6 downloads the zip, double-clicks a file, gets &quot;not a blend file&quot;, and reasonably concludes the product is broken. They can&#x27;t tell the difference between an incompatible save and a corrupt upload. That&#x27;s a refund and a one-star review, and the listing told them it would work.</p>
+
+  <p>For a free tool it&#x27;s just as bad and slower to find out about, because the person who hits it usually assumes they&#x27;ve done something wrong.</p>
+
+  <p>## The fix is one line, and the check is the real work</p>
+
+  <p>Export from the oldest version you claim. That&#x27;s it:</p>
+
+  <pre><code>OLD_BLENDER=&quot;$(ls -d &quot;$HOME&quot;/blender-versions/blender-3.6*/blender | head -1)&quot;
+&quot;$OLD_BLENDER&quot; -b --python export.py -- --piece corner --dir &quot;$STAGE&quot;</code></pre>
+
+  <p>Save compressed while you&#x27;re there. My corner piece is 495,440 bytes as an uncompressed 3.6 save. With <code>compress=True</code> it&#x27;s 97,543, which is smaller than the 100,003 that 5.0 was giving me.</p>
+
+  <p>The check matters more than the fix, because the fix silently rots the moment somebody runs the build on a machine where that path doesn&#x27;t exist. So the test opens **the files in the zip**, in every installed Blender, and looks at what comes back rather than at the exit code:</p>
+
+  <pre><code>def probe(binary, blend, script):
+    r = subprocess.run([str(binary), &quot;-b&quot;, str(blend), &quot;--python&quot;, str(script)],
+                       capture_output=True, text=True, timeout=600, check=False)
+    for line in r.stdout.splitlines():
+        if line.startswith(&quot;PROBEOK &quot;) or line.startswith(&quot;PROBEFAIL&quot;):
+            return line
+    if &quot;not a blend file&quot; in r.stdout or &quot;not a blend file&quot; in r.stderr:
+        return &quot;PROBEFAIL not a blend file&quot;
+    return &quot;PROBEFAIL no verdict on stdout&quot;</code></pre>
+
+  <p>Three things in there are deliberate.</p>
+
+  <p>It reads a verdict out of stdout instead of trusting the return code, because a Blender whose Python died still exits 0. It has an explicit branch for &quot;no verdict at all&quot;, so a probe that never ran is a failure rather than a silent pass. And it points at the staged zip directory, not at a fresh export, because a test that rebuilds what it&#x27;s testing is only testing the rebuild.</p>
+
+  <p>The probe itself prints the mesh: triangle count, dimensions, lowest z, UV layers, material slots. The first version to open a piece sets the reference and every later version is compared to that, rather than to numbers typed into the test. If 4.2 opens the file but loses a material slot, that&#x27;s a failure too, and a version-by-version equality check catches it without me having to know in advance what it would look like.</p>
+
+  <p>## Make it fail before you believe it</p>
+
+  <p>I ran the new test against the broken build first, and that&#x27;s the only reason I trust it:</p>
+
+  <pre><code>RESULT 10/20 opened identically, 10 failed
+  FAIL corner    3.6.23    PROBEFAIL not a blend file
+  FAIL corner    4.2.23    PROBEFAIL not a blend file
+  ok   corner    4.5.12    tris 648 dims 4.000,4.000,4.140 ...</code></pre>
+
+  <p>Ten of twenty, with the two oldest versions refusing every file. Then against the rebuild:</p>
+
+  <pre><code>5 pieces x 5 Blenders: 3.6.23, 4.2.23, 4.5.12, 5.2.0, 5.0.1
+RESULT 25/25 opened identically, 0 failed</code></pre>
+
+  <p>A green test you have never seen go red is not evidence. I&#x27;ve been wrong about that six times on this project, most of them the same shape: an instrument reporting passes it had no ability to detect failures in.</p>
+
+  <p>## The general version</p>
+
+  <p>Every claim on a store page is a claim about the artefact the buyer downloads, and most test suites are claims about the source. The gap between those is where this lives, and it isn&#x27;t only version support. It&#x27;s the zip that ships without the manual because the build excluded it by name and the file got renamed. It&#x27;s the install test with the version number hardcoded, still reporting 5/5 against last release. I&#x27;ve shipped both of those.</p>
+
+  <p>So the question worth asking before a listing goes up is not &quot;do my tests pass&quot;. It&#x27;s: for each sentence on that page, what opened the actual file and checked?</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: your-blend-does-not-open-in-the-version-your-store-page-clai -->
+
   <h2>Free add-ons</h2>
 
   <p>
