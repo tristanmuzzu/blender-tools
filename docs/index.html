@@ -533,6 +533,74 @@ RESULT 25/25 opened identically, 0 failed</code></pre>
 
 <!-- /section: your-blend-does-not-open-in-the-version-your-store-page-clai -->
 
+  <!-- section: a-corridor-with-one-wall-missing-passes-every-hard-gate -->
+  <h2 id="a-corridor-with-one-wall-missing-passes-every-hard-gate">A corridor with one wall missing passes every hard gate</h2>
+
+  <p>The modular corridor kit I released this morning ships a validation report in the zip. Five hard gates plus a round trip, run over the exact <code>.blend</code> files the buyer downloads, because every asset pack on every store says &quot;game ready&quot; and almost none of them says what was measured. Today I went and broke one of the pieces on purpose to find out what that report can actually see.</p>
+
+  <p>The answer is less than I would like, and the gap is worth knowing about if you gate your own assets this way.</p>
+
+  <p>## The break</p>
+
+  <p>A module is 4m square with a 2.2m doorway. The wall footprint is the floor slab with the corridor taken out of it, built as a plan-view grid, so the piece is a few dozen closed boxes welded together. I deleted one of them from the generator: the wall run on the +X side of a straight module, x from 1.10 out to 1.75, spanning the full 2.2m of the opening in y.</p>
+
+  <p>That&#x27;s an entire side wall of the corridor, gone along its whole length.</p>
+
+  <p>Then I ran the validator that produces the report in the zip.</p>
+
+  <pre><code>PASS  H1 scale: largest dimension 4.14m (allowed 1.0-8.0m)
+PASS  H2 transforms: transforms applied, sits on ground
+PASS  H3 geometry: manifold, no loose or interior geometry
+PASS  H4 uvs: UVs present and non-degenerate
+PASS  H5 tris: 576 tris (budget 2000)
+PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preserved)</code></pre>
+
+  <p>Six for six.</p>
+
+  <p>## Why every one of them says yes</p>
+
+  <p>Once you look at what each gate measures, none of them had a chance.</p>
+
+  <p>The footprint is unchanged. Good piece and broken piece both report dims of (4.0, 4.0, 4.14) and a lowest point of exactly 0.0, because the slabs and the frames set the bounds and the missing run was in the middle of the thing. H1 and H2 are reading the bounding box, and a bounding box doesn&#x27;t know what&#x27;s inside it.</p>
+
+  <p>Manifold survives because I removed a closed box from a mesh of closed boxes. Every edge still has exactly two faces. A wall that isn&#x27;t there isn&#x27;t broken geometry, it&#x27;s an absence, and H3 is looking for breakage.</p>
+
+  <p>UVs are per face, so removing faces leaves the survivors&#x27; UVs alone. Tri count went 588 to 576, which is 12 fewer and comfortably inside a 2000 budget, and it went *down*, which is the direction no budget check ever complains about. The round trip exports 576 triangles and gets 576 back.</p>
+
+  <p>I tried the same trick on the corner piece and got 564 tris and another six passes.</p>
+
+  <p>## The check I wrote for a different bug also misses it</p>
+
+  <p>The kit has a cross-piece check that I&#x27;m quite fond of. Every piece opens on -Y, so at that shared edge each one presents a corridor cross-section, and the check compares them point for point. Floor, ceiling, both wall faces, the skirting. All five piece types give 17 points and all 17 match, which is what lets you butt any piece against any other and not get a jog in the wall.</p>
+
+  <p>The wall-less straight presents the same 17 points. It matches perfectly.</p>
+
+  <p>Of course it does. The run I deleted stops 90cm short of the module edge on both ends, so it never appears in the cross-section that the check looks at. I wrote that check after shipping trim that stopped dead at a seam, and it&#x27;s good at that. It sees the mouth of the corridor. It has nothing to say about the middle.</p>
+
+  <p>## What found the real one</p>
+
+  <p>This was a reproduction. The bug it&#x27;s modelled on was real and it was in the corner piece: no wall at all on the flank the corner doesn&#x27;t turn towards. Six gates passed on it too.</p>
+
+  <p>What found it was rendering the pack and looking at the contact sheet, where it&#x27;s the first thing your eye lands on. The wall panels and the skirting for that side were still being emitted, so they hang in mid-air over the gap with nothing behind them. You spot it before you&#x27;ve finished loading the sheet, and no amount of staring at counts will produce it.</p>
+
+  <p>I have the render open in front of me now for the wall-less straight. You can see straight through the module into the interior of the next one. It is not subtle.</p>
+
+  <p>The oldest version of this lesson on this project cost me a whole product version. My hull plating generator&#x27;s first build reported 456 panels, zero non-manifold edges and 25,120 triangles, every number green, and rendered as spikes shooting into space.</p>
+
+  <p>## Where that leaves the report</p>
+
+  <p>I&#x27;m not going to pretend the fix is &quot;add a coverage gate&quot;, because I haven&#x27;t written one. It&#x27;s the obvious thing: rasterise the wall footprint the piece should have and check the geometry covers it. I know roughly how I&#x27;d do it and it isn&#x27;t in the build yet.</p>
+
+  <p>What is in the build is a refusal. <code>build.sh</code> runs the validator over the exported files and exits non-zero if any line starts with FAIL, so the zip cannot be produced from a piece that failed. That&#x27;s real, and I&#x27;ve watched it fire on a planted failure. It&#x27;s also, as of today, provably blind to a missing wall.</p>
+
+  <p>So the report in the zip means what it says and no more: these pieces are manifold, sit on the ground, have applied transforms, have usable UVs, fit the budget and survive a glTF round trip. It does not mean somebody looked at them. That part is me, on a contact sheet, every version, and I don&#x27;t think I&#x27;d trust a pack where nobody had done it.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: a-corridor-with-one-wall-missing-passes-every-hard-gate -->
+
   <h2>Free add-ons</h2>
 
   <p>
