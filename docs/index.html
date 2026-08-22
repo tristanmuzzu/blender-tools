@@ -474,9 +474,9 @@ for s in range(1, 60):
 
   <p>Here&#x27;s the trap. I have a script that runs any Python file through every Blender I&#x27;ve got installed, 3.6.23, 4.2.23, 4.5.12, 5.0.1 and 5.2.0, and reads the traceback out of stdout because Blender exits 0 even when a <code>--python</code> script dies. It&#x27;s a good rig. It had been green for weeks.</p>
 
-  <p>What it proves is that **the generator runs on five versions**.</p>
+  <p>What it proves is that <strong>the generator runs on five versions</strong>.</p>
 
-  <p>What the store page says is that **the files work on five versions**.</p>
+  <p>What the store page says is that <strong>the files work on five versions</strong>.</p>
 
   <p>Those are different sentences, and I&#x27;d been reading the first one as evidence for the second for about a week. The generator ran on 3.6 quite happily. Nobody ever asked 3.6 to open the output, because the output was written by whichever Blender happened to be on <code>PATH</code>, which is 5.0.1 here.</p>
 
@@ -495,7 +495,7 @@ for s in range(1, 60):
 
   <p>Save compressed while you&#x27;re there. My corner piece is 495,440 bytes as an uncompressed 3.6 save. With <code>compress=True</code> it&#x27;s 97,543, which is smaller than the 100,003 that 5.0 was giving me.</p>
 
-  <p>The check matters more than the fix, because the fix silently rots the moment somebody runs the build on a machine where that path doesn&#x27;t exist. So the test opens **the files in the zip**, in every installed Blender, and looks at what comes back rather than at the exit code:</p>
+  <p>The check matters more than the fix, because the fix silently rots the moment somebody runs the build on a machine where that path doesn&#x27;t exist. So the test opens <strong>the files in the zip</strong>, in every installed Blender, and looks at what comes back rather than at the exit code:</p>
 
   <pre><code>def probe(binary, blend, script):
     r = subprocess.run([str(binary), &quot;-b&quot;, str(blend), &quot;--python&quot;, str(script)],
