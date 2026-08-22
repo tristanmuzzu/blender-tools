@@ -53,6 +53,8 @@
   }
   figure { margin: 1.2rem 0 1.6rem; }
   img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  blockquote { margin: 0 0 1.2rem; padding: .1rem 0 .1rem .9rem; border-left: 3px solid var(--rule); color: var(--muted, #666); }
+  blockquote p { margin: 0; }
   h3 { font-size: .95rem; font-weight: 600; margin: 1.8rem 0 .55rem; letter-spacing: -.005em; }
   pre { background: var(--card, #f4f4f2); border: 1px solid var(--rule); padding: .8rem .9rem; overflow-x: auto; margin: 0 0 1.2rem; }
   pre code { font-size: .84em; line-height: 1.45; }
@@ -699,7 +701,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <p>The bit I want to show you is the comment I wrote next to it yesterday:</p>
 
-  <p>&gt; Every piece opens on -Y, so a -Y mouth is the one edge they all share and the &gt; one every pair can be checked against without rotating anything.</p>
+  <blockquote><p>Every piece opens on -Y, so a -Y mouth is the one edge they all share and the one every pair can be checked against without rotating anything.</p></blockquote>
 
   <p>Both halves of that are true. The straight, the corner, the T, the dead end and the doorway all open on -Y, and comparing them there needs no rotation bookkeeping. It reads like a reason. What it actually is is a description of the cheapest thing to test.</p>
 
