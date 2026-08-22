@@ -621,6 +621,71 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
 <!-- /section: a-corridor-with-one-wall-missing-passes-every-hard-gate -->
 
+  <!-- section: the-camera-fit-was-right-until-i-changed-the-resolution -->
+  <h2 id="the-camera-fit-was-right-until-i-changed-the-resolution">The camera fit was right until I changed the resolution</h2>
+
+  <p>The corridor kit has three store images at 1600x800 and a turntable clip at 1080x1080. Square sitting next to 2:1 on the same page looks like an accident, so this morning I went to re-render the turntable to match. The render script already takes a <code>--res</code> flag, so I expected this to be a five second job and an hour of waiting.</p>
+
+  <p>Every shot in that script fits its own camera by binary search. Push the camera along its view axis, project the model&#x27;s bound-box corners through <code>world_to_camera_view</code>, and stop at the closest distance where all of them sit inside the frame with a margin. Forty-eight iterations, about a second. The whole point of it is that the framing follows the model, so when the mesh changes I don&#x27;t go back and retune a distance by hand.</p>
+
+  <p>The <code>--res</code> override is applied separately, and in the version I read this morning it was applied after the shot had already framed itself. There was a comment next to it, written by me, explaining why that was safe: <code>fit</code> solves against the camera&#x27;s field of view and the sensor fit is horizontal, so widening the frame only ever adds margin.</p>
+
+  <p>Half of that is true.</p>
+
+  <h3>What the sensor fit pins down</h3>
+
+  <p>A Blender camera&#x27;s <code>sensor_fit</code> defaults to <code>AUTO</code>, which fits to whichever render dimension is larger. Both 1080x1080 and 1600x800 are at least as wide as they are tall, so both get fitted horizontally, and horizontal field of view then comes from the lens and the sensor width with the resolution playing no part.</p>
+
+  <p>Same camera, same 42mm lens, same seven-module layout, corners projected at both resolutions without moving anything:</p>
+
+  <pre><code>1080x1080   x 0.0450-0.8858   y 0.2587-0.6853
+1600x800    x 0.0450-0.8858   y 0.0174-0.8705</code></pre>
+
+  <p>I only checked this on a perspective camera left on <code>AUTO</code>. What an orthographic camera does here, or an explicit <code>VERTICAL</code> sensor fit, I haven&#x27;t tested and I&#x27;m not going to guess at it.</p>
+
+  <p>The x span is identical to four decimal places. The y span can&#x27;t be, because vertical field of view is derived from the horizontal one and the aspect ratio. Halve the height against the width and you halve the vertical field of view. Everything vertical in frame gets bigger.</p>
+
+  <p>So the comment holds if you raise <code>resolution_x</code> and leave <code>resolution_y</code> alone. Go from 1:1 to 2:1 and it runs backwards. You aren&#x27;t widening the frame, you&#x27;re shortening it, and <code>world_to_camera_view</code> reads <code>scene.render.resolution_x</code> and <code>resolution_y</code> at the moment you call it. A fit solved before the override is a correct answer about a frame that never gets rendered.</p>
+
+  <h3>Why the stills never showed it</h3>
+
+  <p>I moved the override to before the fit, rendered two frames as a check, and they looked right. Two frames looking right is not a measurement, so I went and measured what the old ordering had actually been doing, and the first result was that for a single still of this layout it does nothing at all.</p>
+
+  <p>Look at the numbers above again. The x span runs down to 0.0450, which is exactly the margin the search was asked for, and y stops well short at both ends. The search stopped because it ran out of width, not height. Shrinking the vertical field of view afterwards just eats into space that was already empty.</p>
+
+  <p>The three store images are the same story. They&#x27;re fitted at 1400x900 and rendered at 1600x800 through that same override, and re-projecting their corners loses nothing off the top or the bottom. The code has been wrong since I wrote it and the pictures have been fine the whole time, which is the kind of bug that survives longest.</p>
+
+  <h3>The orbit is where it bites</h3>
+
+  <p>A turntable can&#x27;t re-solve its distance per frame, or the model pumps towards the camera and away again as it turns. So the fit runs at twelve angles and keeps the worst one, and every frame gets rendered from that radius.</p>
+
+  <p>Fit those twelve angles at 1080x1080 and the worst is 29.88m. Fit them at 1600x800 and the worst is 43.67m. The wide frame is short, the L-shaped layout is deep, and it needs the camera 46% further out.</p>
+
+  <p>Take the first number, render at the second aspect, which is what the old ordering did, and this is how much of the frame height falls off the top and bottom at each angle:</p>
+
+  <pre><code>  0 degrees   0.0%      180 degrees   6.1%
+ 30 degrees   0.0%      210 degrees   0.0%
+ 60 degrees   5.1%      240 degrees   0.0%
+ 90 degrees  16.9%      270 degrees  16.7%
+120 degrees  10.1%      300 degrees  23.8%
+150 degrees   0.0%      330 degrees  13.4%</code></pre>
+
+  <p>Seven of twelve. At 300 degrees nearly a quarter of the frame height is outside it, off the bottom, and off the bottom is the floor slab and the base of every wall. Moving the override to before the fit takes all twelve rows to 0.0%.</p>
+
+  <p>I&#x27;d like to say I worked that out by thinking about it. What actually happened is that my two-frame check renders frames 1 and 2, which are 0 degrees and 180 degrees, and 0 degrees is one of the five angles that was fine anyway.</p>
+
+  <h3>What the fix costs</h3>
+
+  <p>It isn&#x27;t free, and it&#x27;s worth being clear which direction it goes. At 43.67m the layout spans between 37% and 55% of the frame width across the turn, and between 55% and 73% of its height. At 29.88m it sat noticeably larger, and seven angles of it were hanging off the bottom edge. A 2:1 frame around a subject as deep as it is wide has dead space in it somewhere, and refusing to crop means choosing to put that space at the sides. I&#x27;d take empty sides over a missing floor.</p>
+
+  <p>If you have a rig like this, the check is one line of output. Print the minimum and maximum of the projected corners after the fit, and compare that against the resolution you&#x27;re actually rendering at. If those two aren&#x27;t the same resolution, your numbers describe a frame nobody will ever see.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get the Corridor Kit, $19</a>
+  </p>
+
+<!-- /section: the-camera-fit-was-right-until-i-changed-the-resolution -->
+
   <h2>Free add-ons</h2>
 
   <p>
