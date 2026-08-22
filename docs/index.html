@@ -734,7 +734,7 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
   <h3>Proving the new half can fail</h3>
 
-  <p>A green check I&#x27;ve just rewritten is worth nothing until I&#x27;ve watched it go red for the right reason, and the first plant I tried was useless. I dropped the skirting from every wall stub, and it failed with <code>walk-through reference has only 4 points</code>. That&#x27;s the *reference* collapsing, not the comparison working. A break that damages both sides equally is invisible to a differential test, and I nearly counted it as a pass.</p>
+  <p>A green check I&#x27;ve just rewritten is worth nothing until I&#x27;ve watched it go red for the right reason, and the first plant I tried was useless. I dropped the skirting from every wall stub, and it failed with <code>walk-through reference has only 4 points</code>. That&#x27;s the <em>reference</em> collapsing, not the comparison working. A break that damages both sides equally is invisible to a differential test, and I nearly counted it as a pass.</p>
 
   <p>The second plant is the one that means something. I made the skirting 60% deeper on the Y-facing walls only. On a straight, the -Y opening looks at the two side walls, which face along X, so the reference doesn&#x27;t move at all. On anything with a +X opening, the walls you see are the Y-facing ones.</p>
 
