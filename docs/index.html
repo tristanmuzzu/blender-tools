@@ -686,6 +686,92 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
 <!-- /section: the-camera-fit-was-right-until-i-changed-the-resolution -->
 
+  <!-- section: the-tiling-test-only-ever-looked-one-way -->
+  <h2 id="the-tiling-test-only-ever-looked-one-way">The tiling test only ever looked one way</h2>
+
+  <p>The corridor kit sells on one promise. Put any two pieces together and the join disappears: floor line, ceiling line, wall faces, skirting, all running straight through. That is checkable, so there is a check. It builds every piece type, takes the corridor cross-section at a shared edge, and asserts the sections are identical point for point.</p>
+
+  <p>It went in yesterday and it has been green ever since. Today I added a sixth piece and it turned out the check had been asking about a third of the question.</p>
+
+  <h3>What it was doing</h3>
+
+  <p>The section is taken at one edge of a 4m module, restricted to the 2.2m opening a person walks through. Seventeen points on the straight: floor at z=0.176, skirting top at 0.34, ceiling underside at 3.184, roof slab, spine, conduits. Every other piece has to match that set exactly.</p>
+
+  <p>The bit I want to show you is the comment I wrote next to it yesterday:</p>
+
+  <p>&gt; Every piece opens on -Y, so a -Y mouth is the one edge they all share and the &gt; one every pair can be checked against without rotating anything.</p>
+
+  <p>Both halves of that are true. The straight, the corner, the T, the dead end and the doorway all open on -Y, and comparing them there needs no rotation bookkeeping. It reads like a reason. What it actually is is a description of the cheapest thing to test.</p>
+
+  <p>The corner opens on -Y and +X. The T opens on -Y, +Y and +X. Between them they have had two +X openings since the first version, and nothing had ever compared either of those to anything at all.</p>
+
+  <h3>Adding a crossroads made it cost something</h3>
+
+  <p>A four way piece opens on all four sides. Suddenly the untested edges aren&#x27;t a couple of odd cases at the margin, they&#x27;re most of the kit&#x27;s connectivity. So I made the check loop over every open side of every piece instead of one side of each. Fourteen edges rather than six.</p>
+
+  <p>It failed on the first piece it tried, on that piece&#x27;s second edge:</p>
+
+  <pre><code>AssertionError: corner +X mouth differs from the straight&#x27;s -Y:
+0 only on corner, 9 only on straight</code></pre>
+
+  <p>Nine points missing, none extra. Here they are:</p>
+
+  <pre><code>(-1.040, 3.356)  (-0.930, 3.700)  (-0.230, 3.700)  (-0.120, 3.356)
+( 0.570, 3.356)  ( 0.658, 3.580)  ( 0.782, 3.580)  ( 0.870, 3.356)
+( 1.050, 3.356)</code></pre>
+
+  <p>Every one of them sits at 3.356 or higher, and the ceiling underside is at 3.184. None of this is inside the corridor. The spine on the roof runs from x=-1.04 to -0.12 and stands 34cm proud; the two conduits sit at 0.57 to 0.87 and 1.05 to 1.23. Those are the nine points. The roof pipework.</p>
+
+  <p>And it&#x27;s supposed to be missing. The generator lays the spine and both conduits along Y on every piece, whichever way that piece&#x27;s corridor actually goes, because turning them through a corner puts two runs crossing at the module centre with coincident top faces, and coincident faces inside a solid are non-manifold geometry. I wrote that trade down when I made it. A clean mesh beat continuous pipework.</p>
+
+  <p>So the failure was real and the check was wrong. Its own docstring says it tests &quot;the part a buyer walks through, floor, ceiling, both wall faces and the skirting&quot;. Then it went and compared the roof furniture too, and got away with it because along Y the furniture happens to match.</p>
+
+  <h3>Two questions instead of one</h3>
+
+  <p>The section now takes a height cutoff. Below the ceiling it&#x27;s the walk-through profile and it has to match on all fourteen open edges. The full profile, furniture included, still has to match along Y, where the furniture runs. Same function, called two ways.</p>
+
+  <p>Eight points in the walk-through set, fourteen edges, green on 3.6.23, 4.2.23, 4.5.12, 5.0.1 and 5.2.0.</p>
+
+  <h3>Proving the new half can fail</h3>
+
+  <p>A green check I&#x27;ve just rewritten is worth nothing until I&#x27;ve watched it go red for the right reason, and the first plant I tried was useless. I dropped the skirting from every wall stub, and it failed with <code>walk-through reference has only 4 points</code>. That&#x27;s the *reference* collapsing, not the comparison working. A break that damages both sides equally is invisible to a differential test, and I nearly counted it as a pass.</p>
+
+  <p>The second plant is the one that means something. I made the skirting 60% deeper on the Y-facing walls only. On a straight, the -Y opening looks at the two side walls, which face along X, so the reference doesn&#x27;t move at all. On anything with a +X opening, the walls you see are the Y-facing ones.</p>
+
+  <pre><code>corner +X walk-through mouth differs from the straight&#x27;s -Y:
+4 only on corner, 4 only on straight
+0/5 passed</code></pre>
+
+  <p>Four points in the reference the corner no longer has, four on the corner the reference does not, on all five Blender versions. Under the old one-sided check that geometry would have shipped green.</p>
+
+  <h3>The bit worth taking away</h3>
+
+  <p>The kit is symmetric by construction, and symmetry is exactly what talks you into testing one representative case. My comment even shows the reasoning arriving: find the edge every piece shares, test that, note that no rotation is needed. It felt like picking the general case. It was picking the convenient one.</p>
+
+  <p>What made it visible was adding the member that doesn&#x27;t fit the pattern. Five pieces all opened on -Y and it looked like a law. The sixth opens on four sides and it turned out to be a coincidence of which five pieces I had built first.</p>
+
+  <p>If you have a test that picks one axis, one face, one orientation because &quot;they are all the same&quot;, the thing to check is whether they were all the same when you wrote it, or whether they still are.</p>
+
+  <p>Six pieces now, 396 triangles on the crossroads, 36 of 36 hard gates in the zip.</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: the-tiling-test-only-ever-looked-one-way -->
+
   <h2>Free add-ons</h2>
 
   <p>
