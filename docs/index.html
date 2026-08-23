@@ -774,6 +774,69 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
 <!-- /section: the-tiling-test-only-ever-looked-one-way -->
 
+  <!-- section: i-asked-blender-to-render-no-frames-and-it-rendered-one -->
+  <h2 id="i-asked-blender-to-render-no-frames-and-it-rendered-one">I asked Blender to render no frames and it rendered one</h2>
+
+  <p>I wanted to know how much of a turntable render is Blender starting up and how much is actual rendering. The lazy way to find that out is to run the whole thing with an empty frame range. Set the start above the end, nothing renders, and the wall clock is your setup cost. That was the idea.</p>
+
+  <p>It printed <code>RENDERED 0 of 0 frames</code> and exited cleanly. Then I listed the output directory out of habit and there was a PNG in it.</p>
+
+  <pre><code>$ ls /tmp/tt_setup/
+0000.png</code></pre>
+
+  <h3>What actually happens</h3>
+
+  <p>A scene with <code>frame_start = 1</code> and <code>frame_end = 0</code> does not mean &quot;no frames&quot; to <code>bpy.ops.render.render(animation=True)</code>. It renders one, and it numbers it <code>0000.png</code>. I diffed it against a real frame 1 from an earlier pass and they&#x27;re the same picture: difference bounding box <code>None</code>, per-channel max 0 on all three channels. Which makes sense once you think about it, because a linear keyframe at frame 1 holds constant for everything before it, so frame 0 is frame 1&#x27;s pose.</p>
+
+  <p>My own guard didn&#x27;t notice, and the reason is embarrassing in a useful way. It builds the list of frames it expects from <code>range(start, end + 1)</code>, which for 1 to 0 is empty, then checks that every file in the list exists. Nothing in an empty list is missing. So it printed a count of zero out of zero and raised nothing, and the number it should have been suspicious of was the one it was reporting.</p>
+
+  <h3>The check downstream was worse</h3>
+
+  <p>The encoder that turns the sequence into an mp4 has a real count check on it, and I&#x27;d tested that check by breaking it. Nine PNGs numbered 1 to 7 and then 9, 10 gives <code>9 frames on disk, 7 in the mp4</code> and exit 1, because ffmpeg&#x27;s numbered input stops dead at a gap and doesn&#x27;t mention it. That test made me trust it more than I should have.</p>
+
+  <p>A gap is not the failure mode a stray <code>0000.png</code> produces. ffmpeg starts at the lowest number it finds, so <code>0000</code> through <code>0004</code> is five contiguous frames, and both sides of my count check agree with each other perfectly:</p>
+
+  <pre><code>count and duration check out: 5 frames, 0.208s against 0.208s</code></pre>
+
+  <p>Five frames on disk, five in the mp4, duration exactly right for 24fps. Clean pass. The clip just opens with its first pose played twice, which is a stutter at the loop point of a turntable, and it&#x27;s the specific thing I lay the closing keyframe one frame past the end to avoid.</p>
+
+  <p>The fix isn&#x27;t clever: the sequence has to start at 0001 and be contiguous, and anything in the directory that isn&#x27;t a numbered frame is an error. I planted four bad sequences against it before believing it, and two good ones as well, because a check that refuses everything passes all four plants and is still useless.</p>
+
+  <h3>Now the number I was after</h3>
+
+  <p>I got it in the end, by rendering single frames instead of none.</p>
+
+  <p>A whole Blender process that starts up, builds the kit, solves the camera at twelve points around the orbit and renders one frame at 1600x800 takes <strong>27 seconds</strong>. Inside a process that&#x27;s already running, each additional frame costs <strong>40 to 45 seconds</strong>.</p>
+
+  <p>Read those two again, because I had to. Starting Blender from scratch and rendering a frame is cheaper than rendering one more frame in a Blender that&#x27;s already warm. Here are the save times from one four frame pass, in seconds from launch:</p>
+
+  <pre><code>0001.png    31.97
+0002.png    72.65    +40.68
+0003.png   113.10    +40.45
+0004.png   155.03    +41.93</code></pre>
+
+  <p>I don&#x27;t know why. The lights are parented to the orbit pivot so they turn with the camera, and my guess is that moving three area lights every frame costs a shadow map rebuild that the first frame gets for free somewhere in scene setup. That&#x27;s a guess and I haven&#x27;t tested it, so treat it as one.</p>
+
+  <h3>What it changes</h3>
+
+  <p>A draft of this page that never went out said rendering in slices costs you the startup once per slice, and put three slices at about 78 seconds more than one long pass. That was wrong, and wrong in the direction that had been talking me out of the thing I should have been doing.</p>
+
+  <p>If a fresh first frame costs 27 seconds and an in-process frame costs 41, then a slice boundary doesn&#x27;t cost anything. It turns one 41 second frame into a 27 second one, so it gives you about fourteen seconds back, and three slices have two boundaries in them. The 72 frame turn below went out as three slices of 24, and the reason to want slices has nothing to do with speed: a killed pass loses everything, and a killed slice loses at most 24 frames. Two turntables have died on this box already, one killed by the clock at frame 62 of 96 and one stopped by hand at 66. Either would have left two thirds of a turn on disk if this had been known a week ago.</p>
+
+  <h3>The turn itself</h3>
+
+  <p>Below, at last. Seven modules of the corridor kit, orbited once, three seconds at 24fps. The caption is read out of the kit&#x27;s source rather than typed, which matters more than it sounds like it does, because drawtext burns it into every frame and there is no correcting it afterwards without rendering the whole thing again.</p>
+
+  <figure>
+    <video src="media/kitpack_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio">Get the Corridor Kit, $19</a>
+  </p>
+
+<!-- /section: i-asked-blender-to-render-no-frames-and-it-rendered-one -->
+
   <h2>Free add-ons</h2>
 
   <p>
