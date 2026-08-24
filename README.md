@@ -70,17 +70,28 @@ building this lot, with the numbers I measured rather than general advice.
   refactor, and picking a new default so the old one lands on the same code
   path.
 
-## The paid one
+## The paid ones
 
-These twelve are free and stay free. The thing I sell is
-**[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**.
-It panels and greebles a hull procedurally, so you get plating, vents and fins
-laid out over a mesh instead of modelling each one. $24, same five Blender
-versions, same test suite.
+These twelve are free and stay free. Two things in here aren't, and both run on
+the same five Blender versions as the twelve above.
 
-Every add-on above has a link to it at the bottom of its sidebar panel. That's
-the only string attached, and if you never click it the tools work exactly the
-same.
+**[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**
+panels and greebles a hull procedurally. You get plating, vents and fins laid
+out over a mesh instead of modelling each one. $24, same five Blender versions,
+same test suite.
+
+**[Sci-Fi Corridor Kit](https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=freetools-readme)**
+is six modules that tile on a 4 metre grid: a straight, a 90 degree corner, a T
+junction, a four way crossroads, a dead end, and a bulkhead doorway you
+walk through. .blend and .glb, and the Python that generated the lot is in the
+zip, so you can change a number and rebuild rather than edit meshes. $19.
+One catch, up front. There are no textures and no PBR maps, just four
+material slots per piece with the faces already assigned, which is the part
+that takes an afternoon of box-selecting if you do it by hand.
+
+Every add-on above has a link to PanelForge at the bottom of its sidebar panel.
+That's the only string attached, and if you never click it the tools work
+exactly the same.
 
 ## Licence
 
