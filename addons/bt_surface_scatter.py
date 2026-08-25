@@ -101,17 +101,32 @@ class BT_OT_surface_scatter(Operator):
         placed = 0
         for _ in range(self.count):
             face = faces[bisect.bisect_left(weights, rng.random() * total)]
+            # Fan-triangulate and pick a triangle by area, then sample it. The
+            # old version took verts[0..2] and sampled that one triangle, so on
+            # a quad every instance landed in half the face and none in the
+            # other half: measured 800 of 800 on a 4m plane, with the diagonal
+            # visible in the result. The area weighting above already used the
+            # whole face, so the two halves of this were disagreeing.
+            fan, running, fan_total = [], [], 0.0
             verts = [v.co for v in face.verts]
-            # random point in the first tri
-            a, b, c = verts[0], verts[1], verts[2 % len(verts)]
+            for i in range(1, len(verts) - 1):
+                tri = (verts[0], verts[i], verts[i + 1])
+                fan_total += (tri[1] - tri[0]).cross(tri[2] - tri[0]).length / 2
+                fan.append(tri)
+                running.append(fan_total)
+            a, b, c = fan[bisect.bisect_left(running, rng.random() * fan_total)]
             u, v = rng.random(), rng.random()
             if u + v > 1:
                 u, v = 1 - u, 1 - v
             local = a + (b - a) * u + (c - a) * v
             world = surface.matrix_world @ local
 
-            inst = bpy.data.objects.new(f"{sources[0].name}_scatter",
-                                        rng.choice(sources).data)
+            # Named after the source it is actually an instance of. It used to
+            # take the name from sources[0] and the mesh from a random source,
+            # so scattering two objects gave every instance the first one's
+            # name whatever it was showing.
+            source = rng.choice(sources)
+            inst = bpy.data.objects.new(f"{source.name}_scatter", source.data)
             coll.objects.link(inst)
             inst.location = world
             scale = rng.uniform(self.scale_min, self.scale_max)
