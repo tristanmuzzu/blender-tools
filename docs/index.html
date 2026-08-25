@@ -843,6 +843,96 @@ PASS  H6 roundtrip: gltf: survives export and reimport (44,156B, 576 tris preser
 
 <!-- /section: i-asked-blender-to-render-no-frames-and-it-rendered-one -->
 
+  <!-- section: blender-5-2-0-segfaults-on-draco-gltf-export-and-5-2-1-quiet -->
+  <h2 id="blender-5-2-0-segfaults-on-draco-gltf-export-and-5-2-1-quiet">Blender 5.2.0 segfaults on Draco glTF export, and 5.2.1 quietly fixes it</h2>
+
+  <p>Two patch releases turned up this morning, 4.5.13 and 5.2.1, both built today. I install every one of them on the day it lands, because the add-ons on this page say they run on five Blenders and that sentence is worth exactly what the last test run says it is.</p>
+
+  <p>The first thing I do is diff the Python API. I dump every operator id and every RNA property identifier out of each installed Blender and compare the sets. Here is what the seven versions on this machine hold:</p>
+
+  <pre><code>                    operators   RNA identifiers   bundled add-ons
+3.6.23                   2190             58627               117
+4.2.23                   2408             64551                27
+4.5.12                   2396             69144                27
+4.5.13                   2396             69144                27
+5.0.1                    2436             70133                26
+5.2.0                    2498             76856                26
+5.2.1                    2498             76856                26</code></pre>
+
+  <p>And here is what moves between neighbours, added on the left of each slash and removed on the right:</p>
+
+  <pre><code>pair                kind      operators        RNA        add-ons
+3.6.23 -&gt; 4.2.23    minor     282 / 64    9284 / 3354      9 / 99
+4.2.23 -&gt; 4.5.12    minor    161 / 173    8582 / 3989       3 / 3
+4.5.12 -&gt; 4.5.13    PATCH       0 / 0          0 / 0        0 / 0
+4.5.13 -&gt; 5.0.1     minor      59 / 19    5032 / 4043       3 / 4
+5.0.1  -&gt; 5.2.0     minor       66 / 4     6967 / 244       3 / 3
+5.2.0  -&gt; 5.2.1     PATCH       0 / 0          0 / 0        1 / 1</code></pre>
+
+  <p>A minor release moves thousands of identifiers. A patch release moves none. That is the reassuring reading, and it is why I nearly stopped there.</p>
+
+  <h3>The one thing that did move</h3>
+
+  <p>Between 5.2.0 and 5.2.1, one bundled add-on changed version: <code>io_scene_gltf2</code> went from 5.2.39 to 5.2.40. Four of its Python files differ. <code>materials.py</code> changes which material object gets handed to the <code>gather_material_hook</code> extension point, in three places. <code>primitive_extract.py</code> fixes vertex colour handling. <code>io/com/library.py</code> is the interesting one, and the fourth file is the version number itself.</p>
+
+  <p>Then I looked at what else is in that folder, and two shared libraries had left it:</p>
+
+  <pre><code>5.2.0   5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.so
+        5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.so
+
+5.2.1   lib/libbf_intern_draco_bridge.so
+        lib/libbf_intern_meshopt_bridge.so</code></pre>
+
+  <p><code>io/com/library.py</code> was rewritten in the same release to look in the new place, with a separate branch per platform and a real error message when the path can&#x27;t be worked out. So a shared library moved, its loader was rewritten, and the diff of every operator and every property identifier in Blender reports zero changes. Nothing that reads the API surface can see any of this.</p>
+
+  <h3>So I ran it instead</h3>
+
+  <p>The test is small. Add an icosphere at subdivision 4, export it to GLB twice, once plain and once with <code>export_draco_mesh_compression_enable=True</code>, then read the JSON chunk back out of the binary and look for <code>KHR_draco_mesh_compression</code> in <code>extensionsUsed</code>. Checking the file got smaller would not have been enough on its own, because file sizes move whenever the exporter changes anything at all.</p>
+
+  <pre><code>3.6.23     plain 131536 B   draco 24028 B   ratio 0.183   KHR_draco_mesh_compression
+4.2.23     plain 131536 B   draco 24028 B   ratio 0.183   KHR_draco_mesh_compression
+4.5.12     plain 131536 B   draco 24028 B   ratio 0.183   KHR_draco_mesh_compression
+4.5.13     plain 131536 B   draco 24028 B   ratio 0.183   KHR_draco_mesh_compression
+5.0.1      plain 131536 B   draco 131536 B  ratio 1.000   nothing
+5.2.0      segmentation fault
+5.2.1      plain 131536 B   draco 23560 B   ratio 0.179   KHR_draco_mesh_compression</code></pre>
+
+  <p>5.2.0 does not fail the export. It takes Blender down with it. Exit code 139, <code>Writing: /tmp/blender.crash.txt</code>, and this at the bottom of the crash report:</p>
+
+  <pre><code># Python backtrace
+  File &quot;.../io_scene_gltf2/io/exp/draco.py&quot;, line 127 in __encode_primitive
+  File &quot;.../io_scene_gltf2/io/exp/draco.py&quot;, line 93 in __encode_node
+  File &quot;.../io_scene_gltf2/blender/exp/export.py&quot;, line 394 in __gather_gltf</code></pre>
+
+  <p>Line 127 is the <code>encoderSetAttribute</code> call into the bridge library, through ctypes. The library loads fine, the log says <code>Draco is available</code> with the path, the encoder starts and prints <code>Encoding mesh Icosphere</code>, and then the process dies inside the call. I ran it three times in a row and got a segfault three times. A default cube does it too, so this isn&#x27;t about my sphere.</p>
+
+  <p>On 5.2.1 the same export writes 23,560 bytes and the encoder logs its own summary: 3,840 vertices, raw size 130,560, encoded size 22,631, compression ratio 5.77.</p>
+
+  <p>I can&#x27;t tell you which of the two changes fixed it. The library move and the material hook change shipped in the same release, and I don&#x27;t have a build with one and not the other. What I can tell you is that if you&#x27;re on 5.2.0 LTS and Draco compression crashes Blender, upgrading to 5.2.1 is the whole fix, and it went out today.</p>
+
+  <h3>The 5.0.1 row is a different problem</h3>
+
+  <p>That one is my package manager&#x27;s build rather than blender.org&#x27;s, and it prints this before exporting:</p>
+
+  <pre><code>ERROR Draco mesh compression is not available because library could not be
+found at /usr/lib/blender/scripts/addons_core/io_scene_gltf2/libextern_draco.so</code></pre>
+
+  <p>Note the filename it wants. <code>libextern_draco.so</code> is the old name; the add-on in the same install looks for <code>libbf_intern_draco_bridge.so</code> elsewhere. Then the export runs anyway and writes an ordinary uncompressed GLB, 131,536 bytes, with an empty <code>extensionsUsed</code>. You asked for compression, you got a file, and the only sign that you didn&#x27;t get what you asked for is one ERROR line in a console you probably weren&#x27;t watching. In a batch script that difference is invisible until somebody downstream asks why the assets are six times too big.</p>
+
+  <h3>What this is worth, and what it isn&#x27;t</h3>
+
+  <p>The API diff only compares identifiers. It can&#x27;t see a property that changed type, a default that moved, or a function that started returning something else, so a patch release scoring zero on it is not a promise that nothing changed. Today it scored zero on two releases and one of those releases fixed a crash.</p>
+
+  <p>My own exporters don&#x27;t enable Draco, so nothing I ship was hit by this. That&#x27;s luck rather than judgement, and the reason I found the crash at all is that I test the thing rather than the signature.</p>
+
+  <p>One mistake worth keeping, since it nearly cost me the whole measurement. The first version of the dump collected RNA identifiers with <code>for prop in rna.properties</code>, because the linter told me the <code>.keys()</code> I&#x27;d written was redundant. It&#x27;s redundant on a dict. A <code>bpy_prop_collection</code> iterates its values, so what I actually collected was a list of property objects whose repr carries a memory address, and every single identifier came out different between two runs of the same binary. The diff said 69,144 changes between 4.5.12 and 4.5.13. The correct answer is zero, and if I&#x27;d been slightly less suspicious of a number that large I&#x27;d have published the opposite of what&#x27;s true.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-5-2-0-segfaults-on-draco-gltf-export-and-5-2-1-quiet -->
+
   <h2>Free add-ons</h2>
 
   <p>
