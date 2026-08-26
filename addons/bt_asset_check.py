@@ -35,6 +35,31 @@ from mathutils import Vector
 _RESULTS = {}
 
 
+def _world_bounds(obj):
+    """Min and max world-space corner, derived from vertices.
+
+    Not from `obj.bound_box`, which is a cache that a mesh edit does not
+    refresh until something calls `view_layer.update()`. `Fix Mechanical
+    Issues` deletes loose vertices and then drops the object to the floor in
+    the same operator call, so it used to read a box that still contained the
+    vertices it had just removed and overshoot by exactly their depth. On a
+    cone with one loose vertex 6m below it, the object landed **9.752052m in
+    the air** instead of on Z=0, identically on 3.6.23, 4.2.23, 4.5.12,
+    4.5.13, 5.0.1, 5.2.0 and 5.2.1.
+
+    Returns None for a mesh with no vertices, which has no bounds worth
+    reporting and would otherwise raise on min().
+    """
+    verts = obj.data.vertices
+    if not verts:
+        return None
+    pts = [obj.matrix_world @ v.co for v in verts]
+    return (Vector((min(p.x for p in pts), min(p.y for p in pts),
+                    min(p.z for p in pts))),
+            Vector((max(p.x for p in pts), max(p.y for p in pts),
+                    max(p.z for p in pts))))
+
+
 def _check(obj):
     issues = []
 
@@ -43,17 +68,17 @@ def _check(obj):
     if any(abs(r) > 1e-4 for r in obj.rotation_euler):
         issues.append(("Rotation not applied", 'INFO'))
 
-    corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
-    min_z = min(c.z for c in corners)
-    if abs(min_z) > 0.01:
-        issues.append((f"Floating {min_z:.2f}m off Z=0", 'INFO'))
+    bounds = _world_bounds(obj)
+    if bounds is not None:
+        lo, hi = bounds
+        if abs(lo.z) > 0.01:
+            issues.append((f"Floating {lo.z:.2f}m off Z=0", 'INFO'))
 
-    size = max((max(c[i] for c in corners) - min(c[i] for c in corners))
-               for i in range(3))
-    if size > 100:
-        issues.append((f"Very large ({size:.0f}m)", 'INFO'))
-    elif size < 0.01:
-        issues.append((f"Very small ({size:.4f}m)", 'INFO'))
+        size = max(hi[i] - lo[i] for i in range(3))
+        if size > 100:
+            issues.append((f"Very large ({size:.0f}m)", 'INFO'))
+        elif size < 0.01:
+            issues.append((f"Very small ({size:.4f}m)", 'INFO'))
 
     mesh = obj.data
     if not mesh.uv_layers:
@@ -123,8 +148,9 @@ class BT_OT_asset_fix(Operator):
                 bm.to_mesh(obj.data)
                 obj.data.update()
             bm.free()
-            corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
-            obj.location.z -= min(c.z for c in corners)
+            bounds = _world_bounds(obj)
+            if bounds is not None:
+                obj.location.z -= bounds[0].z
         _RESULTS.clear()
         self.report({'INFO'}, f"Fixed {len(meshes)} objects")
         return {'FINISHED'}
