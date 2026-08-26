@@ -933,6 +933,78 @@ found at /usr/lib/blender/scripts/addons_core/io_scene_gltf2/libextern_draco.so<
 
 <!-- /section: blender-5-2-0-segfaults-on-draco-gltf-export-and-5-2-1-quiet -->
 
+  <!-- section: blender-s-smart-uv-project-gives-a-different-answer-every-ti -->
+  <h2 id="blender-s-smart-uv-project-gives-a-different-answer-every-ti">Blender&#x27;s smart UV project gives a different answer every time you run it</h2>
+
+  <p>I spent this morning answering a question on BlenderArtists about porting Blender&#x27;s UV unwrapping operators to Python, and I came away with something I didn&#x27;t expect.</p>
+
+  <p><code>bpy.ops.uv.smart_project</code> isn&#x27;t deterministic. Same mesh, same arguments, same Blender, same session, and it hands back a different UV layout run to run.</p>
+
+  <p>Here&#x27;s the test. Factory settings, a fresh 16x8 UV sphere built from scratch each time, select all in edit mode, <code>smart_project(angle_limit=1.15)</code>, then sum the area of every UV face. Ten times in a row inside one Blender session, so there&#x27;s no process startup to blame it on.</p>
+
+  <pre><code>              uv.unwrap          uv.smart_project
+3.6.23        1 distinct value   3 distinct values
+4.5.13        1 distinct value   2 distinct values
+5.2.1         1 distinct value   2 distinct values</code></pre>
+
+  <p>That left column is the control, and it&#x27;s the only reason I trust the right one. <code>uv.unwrap</code> on the same sphere, the same ten times, gives 0.87465 on every run of all three versions. The probe can tell reproducible from not. It says one of these operators is and the other isn&#x27;t.</p>
+
+  <p>The values themselves:</p>
+
+  <pre><code>3.6.23    0.539089, 0.539090, 0.539325
+4.5.13    0.539325, 0.550717
+5.2.1     0.539325, 0.550717</code></pre>
+
+  <p>I should be careful about my own table. On 3.6.23 the first two differ in the sixth decimal, which is float noise rather than a different layout, so the honest reading is two packings and not three. The gap that matters is 0.539325 against 0.550717. That&#x27;s 2.1% of packed UV area, and that isn&#x27;t a rounding wobble, it&#x27;s the islands landing somewhere else.</p>
+
+  <h3>How I nearly published the opposite</h3>
+
+  <p>My first pass ran each version once. 3.6.23 came back 0.53909, 4.2.23 came back 0.55072, and I had most of a sentence written about the packer changing at 4.2. Then I re-ran 3.6.23 for an unrelated reason and got 0.53933. Same binary, same script, different number.</p>
+
+  <p>One measurement per version looks precisely like version drift when what you&#x27;ve actually got is run-to-run variance. There is no way to tell those apart without running the same binary twice, and I only did it by accident.</p>
+
+  <h3>Why it probably happens</h3>
+
+  <p>I haven&#x27;t read the source, so this is a guess and I&#x27;m labelling it as one. Render threads report 16 on this machine, and a multithreaded packer whose output depends on which thread finishes first would give you this shape: a small set of stable outcomes rather than ten different ones. Three values across ten runs fits scheduling. A random seed would look messier.</p>
+
+  <p>What I&#x27;ll stand behind is the behaviour, because that part I measured.</p>
+
+  <h3>What to do about it if you script UVs</h3>
+
+  <p>If you have a test that compares UV output between runs and it touches smart_project, that test is flaky and you might not have noticed. Mine would have been. Compare something that survives a repack instead: island count, or whether every face has a non-degenerate UV. Not a packed total.</p>
+
+  <p>And if you&#x27;re batch-generating assets where two runs have to produce the same file, smart_project won&#x27;t do that for you. <code>uv.unwrap</code> will.</p>
+
+  <h3>The signature moves too</h3>
+
+  <p>Since I was already in there, the unwrap operator&#x27;s arguments aren&#x27;t stable across versions:</p>
+
+  <pre><code>3.6.23, 4.2.23             6 arguments
+4.5.12, 4.5.13, 5.0.1     11 arguments
+5.2.0, 5.2.1              12 arguments</code></pre>
+
+  <p>4.5 brought <code>iterations</code>, <code>no_flip</code>, <code>use_weights</code>, <code>weight_factor</code> and <code>weight_group</code>, and gave <code>method</code> a third option called <code>MINIMUM_STRETCH</code>. 5.2 added <code>use_original_bounds</code>.</p>
+
+  <p>Getting that wrong is loud rather than silent, which is the good news. On 3.6.23:</p>
+
+  <pre><code>bpy.ops.uv.unwrap(no_flip=True)
+TypeError: Converting py args to operator properties: keyword &quot;no_flip&quot; unrecognized
+
+bpy.ops.uv.unwrap(method=&#x27;MINIMUM_STRETCH&#x27;)
+TypeError: ... enum &quot;MINIMUM_STRETCH&quot; not found in (&#x27;ANGLE_BASED&#x27;, &#x27;CONFORMAL&#x27;)</code></pre>
+
+  <p>Both operators run headless, by the way. <code>blender -b</code> with no window at all, and <code>uv.unwrap</code> returns <code>FINISHED</code> and writes the layer.</p>
+
+  <h3>What I haven&#x27;t tested</h3>
+
+  <p>Whether the variance tracks thread count. Whether it&#x27;s the projection or the packing. Whether it shows up on a single-island mesh rather than a sphere&#x27;s many. All three are answerable and I haven&#x27;t answered any of them.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-s-smart-uv-project-gives-a-different-answer-every-ti -->
+
   <h2>Free add-ons</h2>
 
   <p>
