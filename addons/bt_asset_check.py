@@ -93,13 +93,16 @@ def _check(obj):
     bm.free()
 
     if non_manifold:
-        issues.append((f"{non_manifold} non-manifold edges", 'ERROR'))
+        issues.append((f"{non_manifold} non-manifold edge"
+                       f"{'s' if non_manifold > 1 else ''}", 'ERROR'))
     if loose:
-        issues.append((f"{loose} loose vertices", 'ERROR'))
+        issues.append((f"{loose} loose vert"
+                       f"{'ices' if loose > 1 else 'ex'}", 'ERROR'))
     if interior:
-        issues.append((f"{interior} interior edges", 'ERROR'))
+        issues.append((f"{interior} interior edge"
+                       f"{'s' if interior > 1 else ''}", 'ERROR'))
     if ngons:
-        issues.append((f"{ngons} n-gons", 'INFO'))
+        issues.append((f"{ngons} n-gon{'s' if ngons > 1 else ''}", 'INFO'))
 
     return issues
 
