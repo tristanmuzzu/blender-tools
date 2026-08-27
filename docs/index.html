@@ -1075,6 +1075,73 @@ bpy.ops.screen.screenshot(filepath=out)</code></pre>
 
 <!-- /section: blender-s-screenshot-operator-returns-finished-and-writes-a- -->
 
+  <!-- section: gltf-export-is-correct-exactly-when-blender-s-viewport-looks -->
+  <h2 id="gltf-export-is-correct-exactly-when-blender-s-viewport-looks">glTF export is correct exactly when Blender&#x27;s viewport looks wrong</h2>
+
+  <p>I spent part of today answering somebody whose model looked right in Blender and came out distorted in a WebGL viewer. The answer turned out to be the opposite shape from the one I expected, so it is worth writing down.</p>
+
+  <p>Short version: parent a rotated object to a parent that has non-uniform scale, the way everybody does it, and glTF export moves your geometry by 41cm on a 1m object. Blender&#x27;s viewport shows it correct the entire time.</p>
+
+  <h3>The setup, which is completely ordinary</h3>
+
+  <p>A parent scaled (2, 1, 1). A 1m cube rotated 45 degrees about Z. Select the cube, shift-select the parent, Ctrl+P.</p>
+
+  <p>That is it. No weird rig, no drivers, nothing exotic.</p>
+
+  <h3>What the round trip says</h3>
+
+  <p>Export to glTF, import the result back into an empty scene, and compare the child&#x27;s world-space vertices against what Blender had. I use nearest-neighbour against the original point set rather than pairing by index, because glTF splits vertices at UV and normal seams and the counts do not match.</p>
+
+  <pre><code>as parented with Ctrl+P     max surface move  410.842 mm
+                            footprint 1.4142 x 1.4142  -&gt;  2.2355 x 1.1178
+after Apply All Transforms  max surface move    0.000 mm
+                            footprint 1.4142 x 1.4142  -&gt;  1.4142 x 1.4142</code></pre>
+
+  <p>Identical on 3.6.23, 4.5.13 and 5.2.1. That second row is the control. Without it a probe that always printed a big number would look exactly like a discovery.</p>
+
+  <h3>Why</h3>
+
+  <p>Ctrl+P sets a parent and also stores a parent-inverse matrix on the child. That matrix cancels the parent&#x27;s current transform so the child does not jump when you attach it. That is why your object does not leap across the screen when you press it.</p>
+
+  <p>glTF has no parent-inverse. A glTF node stores translation, rotation and scale, and that is the whole vocabulary. The exporter has to fold Blender&#x27;s parent inverse into those three, and for a rotated child under a non-uniformly scaled parent the matrix it needs is a shear. TRS cannot spell a shear.</p>
+
+  <p>You can see it give up in the file. The exported node reads:</p>
+
+  <pre><code>{&quot;name&quot;: &quot;part&quot;, &quot;rotation&quot;: [0, 0.3726, 0, 0.9280],
+ &quot;scale&quot;: [0.7906, 1, 0.7906]}</code></pre>
+
+  <p>sitting under a parent node with <code>&quot;scale&quot;: [2, 1, 1]</code>. That scale on the child is the exporter&#x27;s best fit to a matrix that is not TRS, and it is wrong.</p>
+
+  <h3>The part I did not expect</h3>
+
+  <p>Parent the same two objects <em>without</em> a parent inverse, so the child does jump and Blender shows it visibly sheared. Now Blender itself looks wrong, and the decomposition error on the child&#x27;s world matrix is 0.435049 rather than 0.</p>
+
+  <p>That case exports perfectly. The node carries a rotation and no scale, and the round trip measures 0.0001 mm.</p>
+
+  <p>So the exporter is accurate exactly when the viewport is showing you a sheared mess, and inaccurate when the viewport looks fine. If you are hunting this by eye in Blender you are looking at the wrong thing.</p>
+
+  <h3>What I ruled out on the way</h3>
+
+  <p>Draco was my first suspect, because lossy compression that moves vertices is an obvious candidate. It is real and it is far too small to matter: a 1m sphere&#x27;s surface moves 0.0492 mm with default Draco and 0.0000 mm with compression off. Parking that object 500m from the origin changes the surface figure to 0.0526 mm, though the bounding-box error grows from 0.0013 mm to 0.0305 mm.</p>
+
+  <p>Nobody is seeing 0.05 mm in a browser. I would have published that as the cause if I had stopped at plausible.</p>
+
+  <h3>What to do</h3>
+
+  <p>Apply All Transforms on the child before export, and the number goes to zero.</p>
+
+  <p>More generally, run the round trip yourself before you suspect the viewer. Export, import into an empty scene, compare. If it comes back clean then the problem is downstream of Blender, and you have just saved yourself a day of reading three.js issues.</p>
+
+  <h3>What I have not tested</h3>
+
+  <p>FBX and USD, whether skinned meshes behave the same, and whether any of the three-js or Babylon loaders compensate for it. All answerable, none answered.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: gltf-export-is-correct-exactly-when-blender-s-viewport-looks -->
+
   <h2>Free add-ons</h2>
 
   <p>
