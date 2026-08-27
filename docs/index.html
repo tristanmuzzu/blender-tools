@@ -1142,6 +1142,59 @@ after Apply All Transforms  max surface move    0.000 mm
 
 <!-- /section: gltf-export-is-correct-exactly-when-blender-s-viewport-looks -->
 
+  <!-- section: mesh-update-does-not-refresh-bound-box-and-i-nearly-fixed-wo -->
+  <h2 id="mesh-update-does-not-refresh-bound-box-and-i-nearly-fixed-wo">mesh.update() does not refresh bound_box, and I nearly fixed working code over it</h2>
+
+  <p>I went looking for a bug in one of my own add-ons this afternoon, could not make it happen, and the reason turned out to be more useful than the bug would have been.</p>
+
+  <p><code>obj.bound_box</code> is a cache. Everybody who has been bitten by it knows that much. What I could not have told you before today is what actually clears it, and the answer is not the function whose name suggests it.</p>
+
+  <h3>The measurement</h3>
+
+  <p>A cone with one stray vertex 6m below it. Read the box once so the cache is genuinely populated, delete the vertex through bmesh, then read the box again four different ways.</p>
+
+  <pre><code>primed                          min z  -6.0
+after mesh.update()             min z  -6.0     still stale
+no update call at all           min z  -6.0     stale
+after any unrelated operator    min z  -1.0     fresh
+after view_layer.update()       min z  -1.0     fresh</code></pre>
+
+  <p>So <code>mesh.update()</code> does not touch it. A depsgraph evaluation does, and calling any operator is one.</p>
+
+  <h3>The line that makes it an experiment</h3>
+
+  <p>That first row is doing all the work. My first attempt at this skipped it, and every reading came back correct.</p>
+
+  <p>If you never read <code>bound_box</code> before the edit, Blender fills the cache lazily the first time you ask, which is after your edit, so there is nothing stale to catch. The probe reports a clean pass and you conclude the code is fine. Mine did exactly that, and I believed it for about ten minutes.</p>
+
+  <p>Priming the cache is the difference between measuring the thing and measuring nothing at all. It is not the first time on this project that a green result has come out of an instrument with no ability to go red, and that is the one lesson here that generalises past Blender.</p>
+
+  <h3>Why it matters where you read it</h3>
+
+  <p>An operator&#x27;s <code>execute()</code> runs after the depsgraph has been evaluated, so a box you read at the top of your own operator is fresh. That is a real guarantee and it is why an add-on that computes a pivot or a centre from <code>bound_box</code> at the start of <code>execute()</code> is fine, whatever the folklore says.</p>
+
+  <p>The moment you mutate geometry inside that same <code>execute()</code> and then read the box again, you are reading the state from before your edit. I shipped that once. An operator deleted loose vertices and then dropped the object to the floor using a box that still contained them, and a cone with one stray vertex 6m down came to rest 9.75m in the air, identically on seven Blender versions.</p>
+
+  <h3>The rule I would write on the wall</h3>
+
+  <p>Read <code>bound_box</code> at the top of an operator if you like. After you have changed geometry, derive the bounds from vertex positions instead:</p>
+
+  <pre><code>pts = [obj.matrix_world @ v.co for v in obj.data.vertices]</code></pre>
+
+  <p>It is one line, it is always right, and on the meshes an add-on touches the cost is not measurable against everything else in the call.</p>
+
+  <p>The thing I would not do is what I was about to do this afternoon, which is change a working add-on because a note in my own defect ledger said it was broken. That note was reasoning. It is now a measurement, and the measurement says the code was fine.</p>
+
+  <h3>What I have not tested</h3>
+
+  <p>Whether this holds on 3.6 and 4.2, since I measured it on 5.0.1 only. Whether <code>depsgraph.update()</code> behaves like <code>view_layer.update()</code> here. Whether the evaluated object from a depsgraph gives a fresh box when the original does not.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: mesh-update-does-not-refresh-bound-box-and-i-nearly-fixed-wo -->
+
   <h2>Free add-ons</h2>
 
   <p>
