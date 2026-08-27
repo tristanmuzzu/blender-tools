@@ -1005,6 +1005,76 @@ TypeError: ... enum &quot;MINIMUM_STRETCH&quot; not found in (&#x27;ANGLE_BASED&
 
 <!-- /section: blender-s-smart-uv-project-gives-a-different-answer-every-ti -->
 
+  <!-- section: blender-s-screenshot-operator-returns-finished-and-writes-a- -->
+  <h2 id="blender-s-screenshot-operator-returns-finished-and-writes-a-">Blender&#x27;s screenshot operator returns FINISHED and writes a black PNG</h2>
+
+  <p>I needed a listing image for a Blender add-on today. The add-on&#x27;s whole output is a sidebar panel, so the image had to be a screenshot of that panel, and the machine I build on has no display attached at all. <code>echo $DISPLAY</code> gives me an empty line.</p>
+
+  <p>So the picture I wanted was a real Blender window, and I had nothing to show it on.</p>
+
+  <p>That turns out to be fine. What isn&#x27;t fine is Blender&#x27;s own screenshot operator, which cheerfully told me it had worked.</p>
+
+  <h3>Blender&#x27;s GUI runs without a display</h3>
+
+  <p><code>Xvfb</code> gives you an X server that draws into memory, and Mesa&#x27;s llvmpipe gives you a software OpenGL good enough for Blender&#x27;s interface. Start one, point Blender at it, and the GUI comes up:</p>
+
+  <pre><code>Xvfb :91 -screen 0 1920x1080x24 &amp;
+DISPLAY=:91 LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+  blender --window-geometry 0 0 1920 1080 --python setup.py</code></pre>
+
+  <p>Inside that Blender, <code>bpy.app.background</code> is <code>False</code> and <code>bpy.context.window_manager.windows</code> has one entry. It&#x27;s a real interactive session with nobody watching it.</p>
+
+  <h3>The part that cost me an hour</h3>
+
+  <p>Blender has <code>bpy.ops.screen.screenshot()</code>. It&#x27;s the obvious thing to reach for, and it does not work here.</p>
+
+  <p>It returned <code>{&#x27;FINISHED&#x27;}</code>. It wrote a 27,368 byte PNG. The file opened, and Pillow read it back as 1920x1080 RGB. Everything you could check without looking said yes.</p>
+
+  <p>Every pixel in it was black.</p>
+
+  <p>I assumed I&#x27;d caught it mid-draw, so I forced a redraw first:</p>
+
+  <pre><code>bpy.ops.wm.redraw_timer(type=&#x27;DRAW_WIN_SWAP&#x27;, iterations=3)
+bpy.ops.screen.screenshot(filepath=out)</code></pre>
+
+  <p>Same result. <code>ImageStat.Stat(im).mean</code> came back <code>[0.0, 0.0, 0.0]</code> and <code>im.getextrema()</code> came back <code>((0, 0), (0, 0), (0, 0))</code>. Not dark. Zero, in all three channels, across two million pixels.</p>
+
+  <p>The operator reads a front buffer, and under Xvfb with llvmpipe nothing ever fills that buffer. Blender isn&#x27;t lying so much as reporting on a thing it can&#x27;t see.</p>
+
+  <h3>What works instead</h3>
+
+  <p>Grab the X server&#x27;s root window from outside the process. ImageMagick does it in one line:</p>
+
+  <pre><code>DISPLAY=:91 import -window root out.png</code></pre>
+
+  <p>Same display, same running Blender, same moment. 647,237 bytes, and channel means of 56.55, 57.63 and 58.66. The interface is all there, down to the text in the menus.</p>
+
+  <p>The difference between the two files is the whole point of this post. Both are 1920x1080 PNGs written without an error. One of them is a picture and one of them is nothing.</p>
+
+  <h3>Two more things that bit me on the way</h3>
+
+  <p>Closing editors to get a big clean viewport works, and <code>bpy.ops.screen.area_close()</code> returns <code>{&#x27;FINISHED&#x27;}</code> for each one. Then I re-fetched the 3D viewport that had grown to fill the space, asked it for its sidebar, and Blender died with a segfault. The screen hasn&#x27;t been laid out again yet at that moment, so the area is reachable and its regions aren&#x27;t ready. Doing the close in one timer tick and the region work in the next fixed it. My log&#x27;s last two lines before the crash were the area list and a viewport size of 1574 x 952, which is the old layout, so the size I was reading was stale as well.</p>
+
+  <p>And the first version of the script printed a pile of useful diagnostics that I never saw, because the log held nothing but a deprecation warning. A GUI Blender block-buffers stdout, and my capture script kills the process rather than letting it exit, so the buffer went with it. Diagnostics go to a file with <code>flush=True</code> now.</p>
+
+  <h3>Why I&#x27;d bother</h3>
+
+  <p>extensions.blender.org asks for a featured image &quot;at least 1920 x 1080 and with aspect ratio of 16:9&quot;. If your add-on draws a panel, then the honest image is that panel, and a mocked-up one drawn in a 3D scene is a picture of a screenshot rather than a screenshot. This route gets you the real thing on a build machine, and it means the picture breaks if the panel breaks, which is a property I want.</p>
+
+  <p>The one I ended up with has the add-on&#x27;s own results in it, from the extension zip, installed the way a user installs it.</p>
+
+  <h3>What I haven&#x27;t tested</h3>
+
+  <p>Whether this works on Wayland-only setups, whether a GPU-backed headless context would make <code>screen.screenshot</code> behave, or whether older Blenders fail the same way. I did all of this on 5.0.1. If <code>screen.screenshot</code> works for you headlessly I&#x27;d genuinely like to know what&#x27;s different.</p>
+
+  <p>One thing I&#x27;d say regardless: check the pixels. A return code and a file size agreed with each other and were both wrong, and the only reason I know is that I opened the file and looked at it.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-s-screenshot-operator-returns-finished-and-writes-a- -->
+
   <h2>Free add-ons</h2>
 
   <p>
