@@ -1195,6 +1195,67 @@ after view_layer.update()       min z  -1.0     fresh</code></pre>
 
 <!-- /section: mesh-update-does-not-refresh-bound-box-and-i-nearly-fixed-wo -->
 
+  <!-- section: blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the- -->
+  <h2 id="blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the-">Blender&#x27;s bevel modifier reorders your faces at 4.5, and the geometry is identical</h2>
+
+  <p>I re-measured a claim on my own store page today, expecting to spend ten minutes on it. The claim is &quot;same seed, same result&quot;, and it survived. What did not survive is my assumption about what &quot;same&quot; was measuring.</p>
+
+  <p>Here is the short version. The Bevel modifier at 4.5 and newer produces a mesh whose vertices are in exactly the same places as the one 4.2 produced, and whose faces are listed in a different order. If nothing you own cares about face order, this costs you nothing and you&#x27;ll never notice. If anything you own walks faces in index order, and most procedural tooling does, it quietly gives a different answer after somebody upgrades Blender.</p>
+
+  <h3>What I measured</h3>
+
+  <p>One cube, scaled to (1.55, 0.92, 0.55), scale applied. Bevel modifier, width 0.07, two segments, everything else left alone. Applied. Then four hashes of the result, so a difference lands in one column rather than in &quot;the mesh changed&quot;.</p>
+
+  <p>Every modifier setting read back off the modifier itself before applying, in case a default had moved underneath me:</p>
+
+  <pre><code>limit_method ANGLE   offset_type OFFSET   miter_outer MITER_SHARP
+angle_limit 0.523599   harden_normals False   use_clamp_overlap True
+loop_slide True   profile 0.5</code></pre>
+
+  <p>Identical on all seven versions I keep installed. So does the output match?</p>
+
+  <pre><code>version   vertices  faces  positions      sorted pos     face indices   total area
+3.6.23    56        54     e45122f9787e   be3a659370a0   ee9c171b631b   21.474022017
+4.2.23    56        54     e45122f9787e   be3a659370a0   ee9c171b631b   21.474022017
+4.5.12    56        54     e45122f9787e   be3a659370a0   847747a55b21   21.474022017
+4.5.13    56        54     e45122f9787e   be3a659370a0   847747a55b21   21.474022017
+5.0.1     56        54     e45122f9787e   be3a659370a0   847747a55b21   21.474022017
+5.2.0     56        54     e45122f9787e   be3a659370a0   847747a55b21   21.474022017
+5.2.1     56        54     e45122f9787e   be3a659370a0   847747a55b21   21.474022017</code></pre>
+
+  <p>Vertex positions to six decimal places: same everywhere. Sorted positions: same everywhere, so it isn&#x27;t even a vertex reorder. Total polygon area to nine decimal places: 21.474022017 everywhere. The face-to-vertex index list is the only column that moves, and it moves exactly once, between 4.2.23 and 4.5.12.</p>
+
+  <p>That is a mesh nobody can tell apart by looking, by measuring, or by any check that counts things.</p>
+
+  <h3>Why I care, which is the part that cost me an afternoon</h3>
+
+  <p>My plating add-on walks the faces of your blockout and decides, per face, whether to put a plate on it and what to put next to the plate. The decisions come off a seeded random stream. Feed the stream faces in a different order and you get a different, equally valid, completely different-looking result.</p>
+
+  <p>So here is the same build script, the same seed, on the same five-block hull:</p>
+
+  <pre><code>3.6.23, 4.2.23    266 plates   11,636 tris   17 faces skipped
+4.5.12 and newer  262 plates   11,388 tris   23 faces skipped</code></pre>
+
+  <p>The store page itself says &quot;around 11,000 triangles&quot;, which survives this fine. The evidence row behind it, the one whose whole job is to justify that sentence, says 11,388 with no version next to it. That&#x27;s true of five of the seven Blenders I test on and 248 triangles out on the other two, and it&#x27;s been sitting there since 18 August.</p>
+
+  <p>The generator itself is fine, and I checked that rather than assuming it. Group the seven versions by the hash of the blockout going in, and the hash of the plated mesh coming out matches the grouping exactly: two input hashes, two output hashes, no crossover. Same mesh and same seed gives the same result on every version. It is the mesh that stopped being the same.</p>
+
+  <h3>The thing worth taking away</h3>
+
+  <p>&quot;Deterministic&quot; in a procedural tool almost always means deterministic given an input, and the input is doing more work in that sentence than anybody says out loud. A <code>.blend</code> stores its face order, so a file your customer saved and reopens is safe. A blockout that a script rebuilds from primitives and modifiers on every run is not, because a modifier upstream of you is free to reorder its output between releases without changing a single coordinate.</p>
+
+  <p>If you have a test asserting your generator is reproducible, check what it feeds in. Mine used <code>primitive_cube_add</code>, which happens to give the same face order on every version going back to 3.6, so the test passed on all seven and told me nothing about the case that actually differs. Twenty-seven runs, three seeds, three versions, all green, and the interesting failure was one modifier away.</p>
+
+  <p>I have not chased which commit did it or whether it was deliberate. My guess is it wasn&#x27;t considered a change at all, because by every reasonable definition the mesh is the same one. What I can tell you is where the line sits: 4.2.23 on one side, 4.5.12 on the other.</p>
+
+  <p>The probe is 52 lines of <code>bpy</code> including its own positive control, a single reversed face winding that has to move the index hash and must not move the position hash. Without that control, a hash that is broken and a hash that is stable print the same seven identical rows. Worth keeping around if you ship anything that walks geometry in order.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the- -->
+
   <h2>Free add-ons</h2>
 
   <p>
