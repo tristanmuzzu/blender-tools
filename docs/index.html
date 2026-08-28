@@ -218,8 +218,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>19 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>20 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#the-action-api-break-everybody-dates-to-4-4-actually-lands-i">The Action API break everybody dates to 4.4 actually lands in 5.0, and 4.5 gives you both</a></li>
     <li><a href="#i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid">I picked the wrong test subject and my probe scored a confident, meaningless 100%</a></li>
     <li><a href="#your-stl-exporter-returns-finished-and-writes-an-empty-file-">Your STL exporter returns FINISHED and writes an empty file, and the checkbox that causes it moved in 5.2</a></li>
     <li><a href="#blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the-">Blender&#x27;s bevel modifier reorders your faces at 4.5, and the geometry is identical</a></li>
@@ -1446,6 +1447,54 @@ against 4.5 on the cubic one</code></pre>
   </p>
 
 <!-- /section: i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid -->
+
+  <!-- section: the-action-api-break-everybody-dates-to-4-4-actually-lands-i -->
+  <h2 id="the-action-api-break-everybody-dates-to-4-4-actually-lands-i">The Action API break everybody dates to 4.4 actually lands in 5.0, and 4.5 gives you both</h2>
+
+  <p>Somebody on BlenderArtists asked how to purge F-Curves left behind after the thing they animated is gone. Their 4.2 script walked <code>action.fcurves</code>, and on a newer Blender it stopped working. That is a well known break, Actions were restructured into layers and slots, and the advice you find says it happened in 4.4.</p>
+
+  <p>I had it written down as 4.4 myself, in my own notes, since the middle of the month. It is wrong, and I only found out because I ran the thing on every Blender I have instead of on the two I usually reach for.</p>
+
+  <p>Here is what one action holding three curves reports, built the same way seven times:</p>
+
+  <pre><code>3.6.23    action.fcurves = 3      channelbags = 0
+4.2.23    action.fcurves = 3      channelbags = 0
+4.5.12    action.fcurves = 3      channelbags = 1, fcurves = 3
+4.5.13    action.fcurves = 3      channelbags = 1, fcurves = 3
+5.0.1     ATTRIBUTE GONE          channelbags = 1, fcurves = 3
+5.2.0     ATTRIBUTE GONE          channelbags = 1, fcurves = 3
+5.2.1     ATTRIBUTE GONE          channelbags = 1, fcurves = 3</code></pre>
+
+  <p>The old attribute survives all the way through 4.5.13. It is gone at 5.0.1. So if you have been avoiding <code>action.fcurves</code> on 4.5 because a forum post told you it was dead there, it isn&#x27;t, and you have been writing a workaround for a version that didn&#x27;t need one.</p>
+
+  <p>The more useful row is 4.5. Both routes answer, and they answer with the same three curves. That makes 4.5 the version where you can write one code path, run it, and watch the old API and the new one agree on the same file. If you are porting an add-on across this break, port it on 4.5 rather than on 5.2, because on 5.2 you have no way to check the new route against the old one. It is the only version that will tell you the two agree.</p>
+
+  <p>The slot route, for the version where it is the only one:</p>
+
+  <pre><code>for layer in action.layers:
+    for strip in layer.strips:
+        for bag in strip.channelbags:
+            for fc in bag.fcurves:
+                ...</code></pre>
+
+  <p>Now the part that surprised me more, because it is the actual answer to the question that was asked. Telling a dead curve from a live one does not need any of this. <code>path_resolve</code> on the curve&#x27;s own <code>data_path</code> works identically on all seven:</p>
+
+  <pre><code>RESOLVE live = 2   [&#x27;location&#x27;, &#x27;modifiers[&quot;KeepMe&quot;].levels&#x27;]
+RESOLVE dead = 1   [&#x27;modifiers[&quot;DeleteMe&quot;].width&#x27;]</code></pre>
+
+  <p>Three curves, one of them pointing at a modifier I deleted. Two resolve, one raises, same numbers on 3.6.23 and on 5.2.1 and on everything in between. The bit of the problem people ask about is the bit that never changed.</p>
+
+  <p>Two live curves in that test are there on purpose. If the only curve I kept was the dead one, a <code>path_resolve</code> that raised on absolutely everything would score a perfect result and I would have published it. That has happened to me on this project before, with a test whose subject made the wrong answer look right, so the control is not decoration.</p>
+
+  <p>One caveat I have not measured. I built the action with <code>keyframe_insert</code> on an object and its modifiers. I have not checked drivers, NLA strips, or actions with more than one slot, and multi-slot is the case the whole restructure exists for, so I would not assume the counts above hold there.</p>
+
+  <p>The reason I own seven Blenders is PanelForge, which is a hull plating generator I sell and maintain across 3.6 to 5.2. Keeping one add-on working on all of them is how a wrong date in my own notes gets caught.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: the-action-api-break-everybody-dates-to-4-4-actually-lands-i -->
 
   <h2>Free add-ons</h2>
 
