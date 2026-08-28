@@ -53,6 +53,11 @@
   }
   figure { margin: 1.2rem 0 1.6rem; }
   img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
+  nav#writing-index { margin: 0 0 2.4rem; }
+  nav#writing-index ol { margin: 0; padding-left: 1.2rem; }
+  nav#writing-index li { margin: 0 0 .35rem; line-height: 1.45; }
+  nav#writing-index a { text-decoration: none; }
+  nav#writing-index a:hover { text-decoration: underline; }
   blockquote { margin: 0 0 1.2rem; padding: .1rem 0 .1rem .9rem; border-left: 3px solid var(--rule); color: var(--muted, #666); }
   blockquote p { margin: 0; }
   h3 { font-size: .95rem; font-weight: 600; margin: 1.8rem 0 .55rem; letter-spacing: -.005em; }
@@ -210,6 +215,32 @@
   <p class="meta">Blender 3.6 through 5.2, and that means the files open on all
   five rather than just that the script runs on all five. Meshes are
   royalty-free for commercial work, the two scripts are GPL v3.</p>
+
+  <nav id="writing-index">
+  <h2>Everything I have written down here</h2>
+  <p>19 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <ol>
+    <li><a href="#i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid">I picked the wrong test subject and my probe scored a confident, meaningless 100%</a></li>
+    <li><a href="#your-stl-exporter-returns-finished-and-writes-an-empty-file-">Your STL exporter returns FINISHED and writes an empty file, and the checkbox that causes it moved in 5.2</a></li>
+    <li><a href="#blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the-">Blender&#x27;s bevel modifier reorders your faces at 4.5, and the geometry is identical</a></li>
+    <li><a href="#mesh-update-does-not-refresh-bound-box-and-i-nearly-fixed-wo">mesh.update() does not refresh bound_box, and I nearly fixed working code over it</a></li>
+    <li><a href="#gltf-export-is-correct-exactly-when-blender-s-viewport-looks">glTF export is correct exactly when Blender&#x27;s viewport looks wrong</a></li>
+    <li><a href="#blender-s-screenshot-operator-returns-finished-and-writes-a-">Blender&#x27;s screenshot operator returns FINISHED and writes a black PNG</a></li>
+    <li><a href="#blender-s-smart-uv-project-gives-a-different-answer-every-ti">Blender&#x27;s smart UV project gives a different answer every time you run it</a></li>
+    <li><a href="#blender-5-2-0-segfaults-on-draco-gltf-export-and-5-2-1-quiet">Blender 5.2.0 segfaults on Draco glTF export, and 5.2.1 quietly fixes it</a></li>
+    <li><a href="#i-asked-blender-to-render-no-frames-and-it-rendered-one">I asked Blender to render no frames and it rendered one</a></li>
+    <li><a href="#the-tiling-test-only-ever-looked-one-way">The tiling test only ever looked one way</a></li>
+    <li><a href="#the-camera-fit-was-right-until-i-changed-the-resolution">The camera fit was right until I changed the resolution</a></li>
+    <li><a href="#a-corridor-with-one-wall-missing-passes-every-hard-gate">A corridor with one wall missing passes every hard gate</a></li>
+    <li><a href="#your-blend-does-not-open-in-the-version-your-store-page-clai">Your .blend does not open in the version your store page claims</a></li>
+    <li><a href="#five-fins-read-as-a-radiator-two-read-as-a-corridor">Five fins read as a radiator. Two read as a corridor.</a></li>
+    <li><a href="#two-numbers-for-the-same-thing-and-neither-of-them-was-right">Two numbers for the same thing, and neither of them was right</a></li>
+    <li><a href="#changing-a-generator-without-moving-everybody-s-meshes">Changing a generator without moving everybody&#x27;s meshes</a></li>
+    <li><a href="#sixteen-sliders-and-what-each-one-actually-does">Sixteen sliders, and what each one actually does</a></li>
+    <li><a href="#what-broke-between-blender-3-6-and-5-2">What broke between Blender 3.6 and 5.2</a></li>
+    <li><a href="#panelforge-1-0-0">PanelForge 1.0.0</a></li>
+  </ol>
+</nav>
 
   <!-- section: 2026-08-17-portfolio -->
   <h2 id="panelforge-1-0-0">PanelForge 1.0.0</h2>
