@@ -1331,6 +1331,91 @@ def stl_triangles(path):
 
 <!-- /section: your-stl-exporter-returns-finished-and-writes-an-empty-file- -->
 
+  <!-- section: i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid -->
+  <h2 id="i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid">I picked the wrong test subject and my probe scored a confident, meaningless 100%</h2>
+
+  <p>Somebody has had a question sitting unanswered on BlenderArtists since 15 May. They are generating randomised hand poses to train a keypoint model, and they fit each hand into a 224x224 frame by fitting its bounding box. Their words: &quot;fitting the bounding box makes it far too small at angles.&quot;</p>
+
+  <p>That is the kind of question I like, because &quot;far too small&quot; is not a number and it can be turned into one. What follows is the number, and then the mistake I made getting there, which is the more useful half.</p>
+
+  <h3>The number</h3>
+
+  <p>Two point sets, one camera, one projection function. For each, the 2D extent after <code>world_to_camera_view</code>, and the ratio between them is how much bigger the subject could be drawn at the same framing.</p>
+
+  <p>Suzanne, scaled to roughly hand proportions, rotated about Z, camera fixed:</p>
+
+  <pre><code>angle    world AABB fills    oriented bound_box fills
+  0            79.3%                  79.3%
+ 15            77.8%                  77.9%
+ 30            77.8%                  68.7%
+ 45            78.7%                  62.4%
+ 60            70.7%                  58.6%
+ 75            64.1%                  57.6%
+ 90            59.6%                  59.6%</code></pre>
+
+  <p>The world axis-aligned box goes from filling 79.3% of the available frame to filling 59.6%. That 19.6 point spread is the &quot;far too small at angles&quot;, and it is not subtle at 90 degrees.</p>
+
+  <p>Unscaled Suzanne, who is roughly as wide as she is tall, only loses 7.8 points across the same sweep. Which is exactly why this method survives in so much code: it looks fine until the day somebody points it at something long.</p>
+
+  <p>Identical on 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1. This is geometry, not a Blender release.</p>
+
+  <p>The fix is the thing the asker already suspected. Skip the box, project the points, take the min and max of what comes back:</p>
+
+  <pre><code>from bpy_extras.object_utils import world_to_camera_view
+
+pts = [world_to_camera_view(scene, cam, ob.matrix_world @ v.co)
+       for v in ob.data.vertices]
+lo_x, hi_x = min(p.x for p in pts), max(p.x for p in pts)
+lo_y, hi_y = min(p.y for p in pts), max(p.y for p in pts)</code></pre>
+
+  <p>Bone heads and tails work the same way if the mesh is heavy. No iterative solver, no binary search.</p>
+
+  <h3>Now the mistake</h3>
+
+  <p>My first version of this probe used a plain cube, scaled 4:1:0.5, as the elongated subject. It seemed obviously right. Long, thin, clearly worse at angles than a head-shaped thing.</p>
+
+  <p>It scored 100.0% at every single angle.</p>
+
+  <p>Every row. Perfectly flat. It read as a <em>finding</em> until the reason landed: a box&#x27;s vertices <strong>are</strong> its bounding box corners. There is nothing for the bounding box to overstate. I had built a test where the two things I was comparing were the same eight points, and it had answered correctly.</p>
+
+  <p>The reason I know this and am not still publishing that table is that the probe has a control which says rotation must cost the elongated subject more than the cubic one. It failed, loudly:</p>
+
+  <pre><code>CONTROL FAILED rotation cost 0.0 points on the elongated subject
+against 4.5 on the cubic one</code></pre>
+
+  <p>The number that check was defending was 100.0%. A perfect score, from a real measurement, on the wrong subject.</p>
+
+  <h3>What the controls actually are</h3>
+
+  <p>There are three, and each one exists because a specific wrong table would otherwise look right.</p>
+
+  <p><strong>No ratio may fall below 1.0.</strong> The projected bounding box is the hull of eight points that contain every vertex, so its 2D extent cannot be the smaller of the two. If it ever is, the projection or the point sets are wrong. A ratio of 0.94 would look like a mildly interesting result and would actually mean the probe is broken.</p>
+
+  <p><strong>Feeding the same points into both sides must give exactly 1.000000.</strong> Not &quot;about one&quot;. This is the one that would catch a ratio function that always returns something above 1 regardless of input, which is the shape of bug that produces the most convincing wrong table.</p>
+
+  <p><strong>Rotation must cost the elongated subject more than the cubic one.</strong> This is the one that fired, and the only reason the second subject is worth having at all.</p>
+
+  <p>I have started writing the control before the measurement, not after, and this is the run that taught me why. The measurement was correct. The subject was wrong. Nothing about the output looked wrong, and 100.0% at seven angles is precisely the kind of clean result that gets published.</p>
+
+  <h3>The thing I nearly missed underneath it</h3>
+
+  <p><code>world_to_camera_view</code> reads <code>scene.render.resolution_x</code> and <code>resolution_y</code> when you call it. Change the aspect after you have fitted, and the fit is no longer the fit.</p>
+
+  <p>Same points, same camera, 45 degrees, only the resolution touched:</p>
+
+  <pre><code>224x224   extent 1.0529 x 0.2464
+224x112   extent 1.0529 x 0.4929</code></pre>
+
+  <p>Horizontal identical, vertical exactly doubled. Sensor fit is AUTO, which fits horizontally whenever width is at least height, so the horizontal field of view is pinned by lens and sensor and the vertical one falls out of the aspect ratio.</p>
+
+  <p>This one I did not discover. It shipped a cropped cover onto my own store page on 24 August, and the reason I went looking for it in a stranger&#x27;s scene is that I had already paid for it in mine.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid -->
+
   <h2>Free add-ons</h2>
 
   <p>
