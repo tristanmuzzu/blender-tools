@@ -1256,6 +1256,81 @@ loop_slide True   profile 0.5</code></pre>
 
 <!-- /section: blender-s-bevel-modifier-reorders-your-faces-at-4-5-and-the- -->
 
+  <!-- section: your-stl-exporter-returns-finished-and-writes-an-empty-file- -->
+  <h2 id="your-stl-exporter-returns-finished-and-writes-an-empty-file-">Your STL exporter returns FINISHED and writes an empty file, and the checkbox that causes it moved in 5.2</h2>
+
+  <p>Somebody on BlenderArtists posted a fix this week for a problem I had never hit: STL exports coming out at 1 kB with no geometry in them, on Blender 5.2.0. Their fix was to tick the camera icon next to the object in the View Layer, so it is visible in render. That is correct. It is also, on the Blender most people are still running, the wrong checkbox.</p>
+
+  <p>I keep seven Blenders installed, so I checked rather than agreed.</p>
+
+  <h3>What I measured</h3>
+
+  <p>One cube. Four visibility states. Four exports. Then the triangle count read out of the binary STL&#x27;s own four-byte header, at offset 80, rather than divided out of the file size, because a truncated file divides just as neatly as a good one.</p>
+
+  <pre><code>                    hide_viewport         hide_render
+3.6.23              no wm.stl_export at all
+4.2.23               84 bytes,  0 tris   684 bytes, 12 tris
+4.5.12               84 bytes,  0 tris   684 bytes, 12 tris
+4.5.13               84 bytes,  0 tris   684 bytes, 12 tris
+5.0.1                84 bytes,  0 tris   684 bytes, 12 tris
+5.2.0               684 bytes, 12 tris    84 bytes,  0 tris
+5.2.1               684 bytes, 12 tris    84 bytes,  0 tris</code></pre>
+
+  <p>Read the last two rows against the four above them. It is not that 5.2 broke and the rest are fine. The behaviour swapped. From 4.2 through 5.0 the exporter honours the monitor icon and ignores the camera icon. From 5.2 it honours the camera icon and ignores the monitor icon. Hide both and you get an empty file on every version that has the operator.</p>
+
+  <p>3.6.23 has no <code>wm.stl_export</code>. Its <code>export_mesh.stl</code> add-on wrote all 12 triangles in every one of the four states, so before the built-in exporter existed, visibility simply was not a factor.</p>
+
+  <p>84 bytes is the header and the count and nothing else. It is a structurally valid STL that says &quot;this file contains zero triangles&quot;, which is why nothing downstream complains until a human opens it.</p>
+
+  <h3>The part that should worry you if you script this</h3>
+
+  <p>The operator returns <code>FINISHED</code> in all eight of those cells.</p>
+
+  <p>Not a warning, not a non-zero anything. Four of those eight files have no geometry in them and the return value is identical to the four that do. If you have a headless export step, and it checks the operator&#x27;s return value, it has been passing this whole time and will keep passing.</p>
+
+  <p>I have written this same sentence about three of my own scripts, which is the only reason I thought to check it here. Blender exits 0 when a <code>--python</code> script dies with an unhandled exception too. Anything in this ecosystem that reports success by not raising is reporting the absence of one specific failure, not the presence of the thing you wanted.</p>
+
+  <h3>What to assert instead</h3>
+
+  <p>The file, not the call.</p>
+
+  <pre><code>import struct
+from pathlib import Path
+
+def stl_triangles(path):
+    &quot;&quot;&quot;Triangle count from a binary STL&#x27;s own header, or None if it isn&#x27;t one.&quot;&quot;&quot;
+    data = Path(path).read_bytes()
+    if len(data) &lt; 84:
+        return None
+    if data[:5] == b&quot;solid&quot; and b&quot;facet&quot; in data[:512]:
+        return None          # ASCII STL, count it a different way
+    (n,) = struct.unpack(&quot;&lt;I&quot;, data[80:84])
+    if len(data) != 84 + n * 50:
+        return None          # header disagrees with the file, trust neither
+    return n</code></pre>
+
+  <p>Three ways to say &quot;I don&#x27;t know&quot; and one way to say a number. The length check is the one that earns its keep: a binary STL is exactly 84 plus 50 bytes per triangle, so a header claiming 12 triangles in a file that could only hold 3 is caught rather than believed.</p>
+
+  <h3>How I know the test can tell the difference</h3>
+
+  <p>This is the bit I have learned to do the hard way. Before believing a probe that reports zero triangles, make it report the right non-zero number first.</p>
+
+  <p>Every run asserts that the plain visible cube comes out as exactly 12 triangles before any other row in the table is looked at. If that assertion fails, the run stops and the zeros mean nothing, because a probe that exports nothing under all conditions produces a beautifully consistent table of zeroes and tells you precisely nothing.</p>
+
+  <p>That assertion is also what caught 3.6.23 quietly having no <code>wm.stl_export</code>. Without it I would have recorded four zeroes for 3.6 and concluded the bug goes back further than it does.</p>
+
+  <h3>What I did about it</h3>
+
+  <p>I replied on the thread with the version boundary, since the original poster had done the useful half already and their fix would send a 4.5 user to the wrong icon.</p>
+
+  <p>Nothing I ship exports STL, so none of this fixed anything of mine. It is in my ledger as F-146 anyway. The cheapest bug is the one somebody else found and you measured before it reached you.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: your-stl-exporter-returns-finished-and-writes-an-empty-file- -->
+
   <h2>Free add-ons</h2>
 
   <p>
