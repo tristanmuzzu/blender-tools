@@ -286,8 +286,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>21 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>22 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr">My mesh passed every count I had and rendered with a dark crease down the middle of a panel</a></li>
     <li><a href="#two-viewport-operators-that-need-a-window-and-only-one-of-th">Two viewport operators that need a window, and only one of them says so</a></li>
     <li><a href="#the-action-api-break-everybody-dates-to-4-4-actually-lands-i">The Action API break everybody dates to 4.4 actually lands in 5.0, and 4.5 gives you both</a></li>
     <li><a href="#i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid">I picked the wrong test subject and my probe scored a confident, meaningless 100%</a></li>
@@ -1637,6 +1638,71 @@ one ray per face centre, off a BVHTree           ---              0.029 s for 7,
   </p>
 
 <!-- /section: two-viewport-operators-that-need-a-window-and-only-one-of-th -->
+
+  <!-- section: my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr -->
+  <h2 id="my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr">My mesh passed every count I had and rendered with a dark crease down the middle of a panel</h2>
+
+  <p>I have a tool that chamfers the hard edges of a model and then bites chunks out of the chamfer, so a part looks used instead of new. The first build of it produced this, and I want to be precise about what &quot;this&quot; was, because for a day I had it filed under the wrong cause.</p>
+
+  <p>Flat panel. Clean render. Two dark lines running across it, parallel to the edge, set in from it by a couple of centimetres.</p>
+
+  <p>Here is what the mesh said about itself at the time:</p>
+
+  <pre><code>verts            2,609
+tris             5,198
+non-manifold      0
+loose verts       0
+position digest  stable across seven Blender versions</code></pre>
+
+  <p>Nothing there is wrong. I checked the pinning logic that is supposed to stop flat faces moving, and it was right: I measured every vertex the code allows to move and none of them touched a face bigger than 0.0021 m2, where a chamfer face is 0.00026 m2. So no big face was being displaced. The instrument I had said the thing it was built to say, and it said it correctly.</p>
+
+  <h3>The bisect that named it</h3>
+
+  <p>The tool runs two passes. Chamfer the edges, then sink the chamfer&#x27;s interior to make bites. I assumed the bites were doing it, because bites are the part that moves things.</p>
+
+  <p>So I ran it with the bite depth set to zero. The creases were still there, identically. That put it on the chamfer, and the chamfer is the pass I had not been suspicious of.</p>
+
+  <p>Then I stopped asking &quot;which vertices moved&quot; and asked a different question: how far does any vertex on a face sit off that face&#x27;s own plane? Bow, not displacement.</p>
+
+  <pre><code>faces at least 0.02 m2, worst distance off their own plane
+
+worn mesh     0.02869 m   on a 0.184 m2 face
+same mesh, bite depth 0   0.02869 m   identical</code></pre>
+
+  <p><strong>28.7 millimetres</strong>, on a part 2.6 metres across, with the wear pass switched off entirely. 52 large faces were bowed. Flat-shaded, a bowed n-gon renders as a crease along the line its triangulation happens to fall on, which is exactly what I was looking at.</p>
+
+  <h3>Why the chamfer was doing it</h3>
+
+  <p>The old code beveled the edge in groups: the widest stretches first, then narrower ones, leaving some stretches alone so they stay sharp. Beveling <em>part</em> of an edge means the chamfer has to terminate somewhere along it, and where it terminates, the flat face next to it gains vertices that sit down the side rather than in the plane. The face is still one face. It is just no longer flat.</p>
+
+  <p>Every vertex on it is where the code intended. That is why the &quot;did a big face move&quot; check passed: nothing moved a face, the face was <em>built</em> bowed.</p>
+
+  <h3>The fix is a shape, not a rule</h3>
+
+  <p>I stopped beveling in groups. One bevel now runs along the whole edge at the widest setting, and the variation is made by pulling vertices back toward the sharp line they came from, per cell of space. A stretch pulled all the way back reads crisp.</p>
+
+  <p>The reason that cannot bow anything is geometric rather than careful. The point a vertex gets pulled toward lies on the original sharp edge. The sharp edge lies in the plane of the flat face beside it. So a vertex that started in that plane is being moved between two points of that plane, and stays in it. Vertices touching two different planes at a chamfer corner do not move at all.</p>
+
+  <p>Measured after: <strong>0.0</strong>.</p>
+
+  <h3>The number is in the tool now, and so is a control</h3>
+
+  <p>The pass returns the worst bow it produced, every run, and the test suite asserts it. That would be worth nothing on its own, because a checker that always returns zero also passes.</p>
+
+  <p>So the suite takes the mesh that just measured clean, pushes one vertex of one large face 4 mm along that face&#x27;s normal, and requires the same measurement to see it.</p>
+
+  <pre><code>clean     0.00000033 m
+planted   0.003031 m</code></pre>
+
+  <p>The first version of that control pushed the vertex 4 mm along <strong>Z</strong>, and measured 0.000000. The first big n-gon on my test part is a side face, and 4 mm of Z on a face whose normal points along X leaves the vertex exactly where it was in that plane. It would have passed a checker that did nothing at all.</p>
+
+  <p>That is the second control on this project in a week that was worthless the first time I wrote it, and both times the tell was the same: the number came back exactly zero, and I looked at what would have made it non-zero.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr -->
 
   <h2>Free add-ons</h2>
 
