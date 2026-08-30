@@ -238,6 +238,52 @@
   five rather than just that the script runs on all five. Meshes are
   royalty-free for commercial work, the two scripts are GPL v3.</p>
 
+  <h2 id="wearforge">WearForge</h2>
+
+  <p>
+    Worn edges on a model you already have. Select your objects, press one
+    button, and every edge sharper than the angle you set gets a chamfer whose
+    width changes along its length, with bites taken out of the parts that
+    would actually take a knock. It is geometry rather than a shader, so it
+    survives export and it does not care what renderer you use.
+  </p>
+
+  <figure>
+    <img src="img/wearforge_compare.jpg" alt="The same machined bracket twice: on the left Blender's Bevel modifier at 15mm, on the right the same width run through WearForge, with chipped stretches along the top edges and the underside left sharp">
+    <figcaption>Left, Blender's own Bevel modifier at 15&nbsp;mm and 4 segments, 1,500 triangles. Right, the same 15&nbsp;mm through WearForge, 7,620 triangles, with 451 of the 672 stretches of edge left crisp. Same camera, same lights, same material.</figcaption>
+  </figure>
+
+  <p>
+    The comparison is against the Bevel modifier on purpose. Blender already
+    ships one and it is free, so a picture of this next to nothing would be
+    hiding the only question worth asking. Three things differ. The chamfer is
+    not one width, and on that bracket it runs 1.8&nbsp;mm to 36&nbsp;mm. The
+    wear is weighted toward edges that face up or outward, so a sheltered
+    underside keeps its edge. And the damage clusters into regions instead of
+    dusting evenly along everything.
+  </p>
+
+  <p>
+    The version before this one bowed flat faces by up to 28.7&nbsp;mm and no
+    count could see it: verts, triangles, non-manifold edges and the position
+    digest were all normal, and the render was the thing that showed it. Every
+    run now reports the worst distance any vertex sits off its own face's
+    plane, and the test suite plants a 4&nbsp;mm bow and requires the same
+    measurement to find it.
+  </p>
+
+  <p>
+    Being straight about the limit: it changes a close shot and it does not
+    change a thumbnail. Shrink that comparison to 150 pixels and the two halves
+    are hard to tell apart.
+  </p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/wearforge?src=portfolio">Get WearForge, $14</a>
+  </p>
+  <p class="meta">Blender 3.6 through 5.2, seven binaries, on the zip you
+  download rather than a rebuild of it. GPL v3.</p>
+
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
   <p>20 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
