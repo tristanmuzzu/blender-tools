@@ -72,13 +72,23 @@ building this lot, with the numbers I measured rather than general advice.
 
 ## The paid ones
 
-These twelve are free and stay free. Two things in here aren't, and both run on
-the same five Blender versions as the twelve above.
+These twelve are free and stay free. Three things in here aren't, and all three
+run on the same seven Blender versions as the twelve above.
 
 **[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**
 panels and greebles a hull procedurally. You get plating, vents and fins laid
-out over a mesh instead of modelling each one. $24, same five Blender versions,
-same test suite.
+out over a mesh instead of modelling each one. $24, same seven Blender
+versions, same test suite.
+
+**[WearForge](https://tristaneer2.gumroad.com/l/wearforge?src=freetools-readme)**
+chips and chamfers the hard edges of a model you already have. The chamfer
+width changes along the edge, most of the edge is left crisp, and the bites go
+where a part actually gets handled rather than everywhere. It writes a `wear`
+point attribute so you can drive a mask off it. $14.
+Two catches, up front. It changes a close shot and it does not change a
+thumbnail, which is measured rather than a guess. And on 3.6 and 4.2 the same
+seed gives the same counts but not quite the same vertex positions, median
+1.24 mm on a 2 m part, because Blender's own bevel changed at 4.5.
 
 **[Sci-Fi Corridor Kit](https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=freetools-readme)**
 is six modules that tile on a 4 metre grid: a straight, a 90 degree corner, a T
