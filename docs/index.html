@@ -286,8 +286,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>20 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>21 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#two-viewport-operators-that-need-a-window-and-only-one-of-th">Two viewport operators that need a window, and only one of them says so</a></li>
     <li><a href="#the-action-api-break-everybody-dates-to-4-4-actually-lands-i">The Action API break everybody dates to 4.4 actually lands in 5.0, and 4.5 gives you both</a></li>
     <li><a href="#i-picked-the-wrong-test-subject-and-my-probe-scored-a-confid">I picked the wrong test subject and my probe scored a confident, meaningless 100%</a></li>
     <li><a href="#your-stl-exporter-returns-finished-and-writes-an-empty-file-">Your STL exporter returns FINISHED and writes an empty file, and the checkbox that causes it moved in 5.2</a></li>
@@ -1563,6 +1564,79 @@ RESOLVE dead = 1   [&#x27;modifiers[&quot;DeleteMe&quot;].width&#x27;]</code></p
   </p>
 
 <!-- /section: the-action-api-break-everybody-dates-to-4-4-actually-lands-i -->
+
+  <!-- section: two-viewport-operators-that-need-a-window-and-only-one-of-th -->
+  <h2 id="two-viewport-operators-that-need-a-window-and-only-one-of-th">Two viewport operators that need a window, and only one of them says so</h2>
+
+  <p>Two threads on this forum, both more than a year old, both unanswered, and both the same question underneath: why does a viewport operator do nothing when a script calls it? One asks why <code>view3d.select_box</code> selects zero faces. The other has given up on it and is casting rays per vertex instead, and reports that taking half an hour.</p>
+
+  <p>I sat down to answer them and came out with two crashes and a number I did not expect.</p>
+
+  <h3>The box select genuinely selects nothing</h3>
+
+  <p>I ran the first thread&#x27;s code as written, under a real window rather than in background mode, because a script that drives a viewport has no business being tested without one. Blender 5.2.1, a default cube, face mode, everything deselected first, then their call:</p>
+
+  <pre><code>1. the thread&#x27;s code, INVOKE_DEFAULT, area size    0 faces
+2. same call without INVOKE_DEFAULT                0 faces</code></pre>
+
+  <p>So it isn&#x27;t the <code>INVOKE_DEFAULT</code>. Both forms return cleanly and select nothing.</p>
+
+  <h3>The standard advice makes it worse</h3>
+
+  <p>Every answer you find to this says the same thing: the viewport has not drawn yet, so force a redraw first. That&#x27;s the sort of advice that sounds right, and here is what it does.</p>
+
+  <pre><code>3. force a redraw, then select_box
+   RuntimeError: Operator bpy.ops.view3d.select_box.poll()
+   Expected a view3d region</code></pre>
+
+  <p><code>bpy.ops.wm.redraw_timer(type=&#x27;DRAW_WIN_SWAP&#x27;, iterations=1)</code> inside a <code>temp_override</code> invalidates the override it is running in. The redraw returns fine. The next operator in the same <code>with</code> block cannot find the region any more. Three of my five variants died there rather than selecting anything, which means the fix people reach for first turns a silent zero into a traceback.</p>
+
+  <p>Measured the same on 3.6.23, 4.2.23, 4.5.12 and 5.2.1: two silent zeros and three poll failures on each of them. The error text differs by one capital letter between the older ones and 5.2, which is the sort of thing that makes it very hard to search for.</p>
+
+  <h3>Then the other operator took the whole process with it</h3>
+
+  <p>The second thread&#x27;s real answer is &quot;bind a menu to a key&quot;, and I didn&#x27;t want to write that without checking it, so I called <code>bpy.ops.wm.call_menu</code> from a script.</p>
+
+  <pre><code>$ blender -b --factory-startup --python callmenu.py -- VIEW3D_MT_object
+Blender 5.2.1
+MENU VIEW3D_MT_object present
+Writing: /tmp/blender.crash.txt
+Segmentation fault (core dumped)
+exit 139</code></pre>
+
+  <p>No Python traceback. The line after the call never runs. I checked every Blender I have and it is all of them: 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1, seven for seven, and on a second menu name to be sure it was not one bad menu.</p>
+
+  <p>A popup needs a window, so that isn&#x27;t exactly a surprise. What&#x27;s worth saying is the shape of the failure. One of these two operators refuses politely with a <code>RuntimeError</code> you can catch. The other one segfaults.</p>
+
+  <p>The control matters here, and it&#x27;s the half people skip. Under Xvfb with a real window and a VIEW_3D override, the identical call returns <code>{&#x27;INTERFACE&#x27;}</code>. Without that second run, &quot;call_menu crashes&quot; would be a sentence about <code>call_menu</code>. With it, it is a sentence about the missing window, which is a different thing to tell somebody.</p>
+
+  <h3>The good news is the exit code</h3>
+
+  <p>I have been caught before by Blender exiting 0 while a <code>--python</code> script died with an unhandled exception. Every check I write now has to prove it can go red before I trust it green.</p>
+
+  <p>This one is fine. A segfault gives you 139, and 139 is not 0, so a return-code check catches it. That&#x27;s worth knowing precisely because the other case exists.</p>
+
+  <h3>And the half hour was never the ray casting</h3>
+
+  <p>The second thread blamed <code>scene.ray_cast</code>. It isn&#x27;t the ray casting. Their loop creates a cube per vertex to mark it, and that&#x27;s the whole cost.</p>
+
+  <p>On a 7,690 vertex mesh, timed three ways:</p>
+
+  <pre><code>per vertex, with primitive_cube_add and resize   9.693 ms each   74.5 s for the lot
+per vertex, those two lines deleted              0.006 ms each    0.046 s
+one ray per face centre, off a BVHTree           ---              0.029 s for 7,680 faces</code></pre>
+
+  <p>Deleting two lines is 1,608 times. Casting per face centre off a <code>BVHTree</code> instead of per vertex through <code>scene.ray_cast</code> gets you the rest of the way, and both methods return the identical set of visible faces, which is the check that made me believe the fast one.</p>
+
+  <p>Three controls on that, because a fast method that finds the wrong faces is worse than a slow one. Zero faces pointing away from the eye ended up in the visible set. All 256 up-facing faces on the top slab did. Zero of the 1,280 faces on its underside did.</p>
+
+  <p>That last one was worthless the first time I ran it. I had filtered for underside faces above the origin, when the underside of the slab is below it, so the control had an empty candidate set and cheerfully reported 0 of 0. A control that cannot fail passes every time, and it took looking at the number <code>0 of 0</code> and asking what the 0 on the right was doing there.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: two-viewport-operators-that-need-a-window-and-only-one-of-th -->
 
   <h2>Free add-ons</h2>
 
