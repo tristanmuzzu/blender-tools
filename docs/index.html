@@ -1592,7 +1592,7 @@ RESOLVE dead = 1   [&#x27;modifiers[&quot;DeleteMe&quot;].width&#x27;]</code></p
 
   <p><code>bpy.ops.wm.redraw_timer(type=&#x27;DRAW_WIN_SWAP&#x27;, iterations=1)</code> inside a <code>temp_override</code> invalidates the override it is running in. The redraw returns fine. The next operator in the same <code>with</code> block cannot find the region any more. Three of my five variants died there rather than selecting anything, which means the fix people reach for first turns a silent zero into a traceback.</p>
 
-  <p>Measured the same on 3.6.23, 4.2.23, 4.5.12 and 5.2.1: two silent zeros and three poll failures on each of them. The error text differs by one capital letter between the older ones and 5.2, which is the sort of thing that makes it very hard to search for.</p>
+  <p>Measured on every Blender I have and identical on all seven: 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1, two silent zeros and three poll failures each. So it is not a regression and this route never worked. The only thing that changed across nine years is that the error says lowercase &quot;expected&quot; through 5.0.1 and capitalised &quot;Expected&quot; from 5.2.0, which is the sort of thing that makes it very hard to search for.</p>
 
   <h3>Then the other operator took the whole process with it</h3>
 
