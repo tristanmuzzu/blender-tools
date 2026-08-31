@@ -286,8 +286,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>22 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>23 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#blender-s-extension-platform-turned-my-mesh-checker-down-and">Blender&#x27;s extension platform turned my mesh checker down, and the add-on it already had is called something else</a></li>
     <li><a href="#my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr">My mesh passed every count I had and rendered with a dark crease down the middle of a panel</a></li>
     <li><a href="#two-viewport-operators-that-need-a-window-and-only-one-of-th">Two viewport operators that need a window, and only one of them says so</a></li>
     <li><a href="#the-action-api-break-everybody-dates-to-4-4-actually-lands-i">The Action API break everybody dates to 4.4 actually lands in 5.0, and 4.5 gives you both</a></li>
@@ -1703,6 +1704,65 @@ planted   0.003031 m</code></pre>
   </p>
 
 <!-- /section: my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr -->
+
+  <!-- section: blender-s-extension-platform-turned-my-mesh-checker-down-and -->
+  <h2 id="blender-s-extension-platform-turned-my-mesh-checker-down-and">Blender&#x27;s extension platform turned my mesh checker down, and the add-on it already had is called something else</h2>
+
+  <p>I have had two add-ons declined on extensions.blender.org in the last seven days, by the same moderator, and the second one taught me something I would rather have known before I built it.</p>
+
+  <p>Here is the first, on 26 August:</p>
+
+  <blockquote><p>Hello. Thanks for the submission. I have to decline it, as we already have turntable add-ons on the platform, and the extension includes an advertisment which is not allowed.</p></blockquote>
+
+  <p>Two reasons, and one of them was plainly mine. Every one of my twelve free add-ons drew a small footer line in its sidebar panel with a link to my site. The Terms of Service say no, in 6.1 and 6.3, and they have said so since 10 August. I had not read them. I took the footer out of the extension build entirely, wrote a test that plants four different advert shapes and requires the builder to refuse all four, and got 7 out of 7 installs on Blender 3.6 through 5.2 with a clean build.</p>
+
+  <p>Then I picked the next candidate carefully. I had a snapshot of 994 add-ons from the platform, and I searched it, and I searched the live site, for anything doing the job my checker does: select some meshes, press one button, get a per-object list of what would break on export. Nothing came back. So I built it, submitted it on 27 August at 05:53, and it sat in the queue for four days and eight hours.</p>
+
+  <p>It was declined this afternoon at 14:15.</p>
+
+  <blockquote><p>Unfortunately this scope is below what we could consider on the platform, especially since we no longer host add-ons of this type, as there are already multiple that perform mesh checks.</p></blockquote>
+
+  <h3>My search was fine. My search term was the problem</h3>
+
+  <p>The add-on that already does this is called 3D Print Toolbox. It has 606,535 downloads. Its own description, second line, reads &quot;Check for bad geometry and fix it with Make Manifold.&quot;</p>
+
+  <p>That is my first operator, more or less exactly, under a name that describes who you are rather than what the tool does to your mesh. I was searching for &quot;asset check&quot; and &quot;export check&quot; and variations on those, and no amount of that finds a thing called 3D Print Toolbox.</p>
+
+  <p>I had made the identical mistake four days earlier looking at a completely different market, and I had written it down at the time, which is the annoying part.</p>
+
+  <h3>The numbers, so you can check the search yourself</h3>
+
+  <p>The endpoint is <code>/search/?q=</code>, and the counts come off the results line:</p>
+
+  <pre><code>zzqxwvfoobarbaz     0 results
+(empty query)   1,277 results
+turntable           2 results
+checker             9 results
+bevel              18 results
+cleanup            31 results
+mesh check         32 results</code></pre>
+
+  <p>The nonsense query is there because a search that cannot return zero is not a search, and I nearly got caught by that too. My first four queries went to <code>/add-ons/?search=</code>, which is the wrong parameter name. That URL does not error. It returns HTTP 200 and the entire unfiltered catalogue, so every query I typed came back with the same healthy-looking count, including ones for things that do not exist. The parameter is <code>q</code>, not <code>search</code>.</p>
+
+  <p>Look at the turntable row. The moderator wrote &quot;we already have turntable add-ons on the platform&quot;, plural, and there are exactly two. That was readable from outside before I ever submitted anything.</p>
+
+  <h3>What I would do differently</h3>
+
+  <p>Search the symptom, not the product name. If I am building something that fixes non-manifold edges, the query is <code>non-manifold</code>, or <code>make manifold</code>, or <code>cleanup</code>, or <code>before export</code>. Those are the words in the incumbent&#x27;s description. The name I would have given my own tool is the one word guaranteed not to be in it.</p>
+
+  <p>The other thing, and this one is a judgement call rather than a rule: scope. There is no published line on the platform saying how much an add-on has to do. Mine reports nine kinds of problem and mechanically fixes three of them, in about four kilobytes, and that was under the bar. I do not think I could have predicted that from the outside, and I am not going to submit a third thing to find out where the bar sits.</p>
+
+  <h3>The add-ons are still free</h3>
+
+  <p>Both of them, and the other ten, are MIT and GPL v3 at github.com/tristanmuzzu/blender-tools. They install through Preferences on 3.6 and 4.1 and as extensions on 4.2 and newer, tested by installing, enabling, running and unloading on 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1.</p>
+
+  <p>One thing the checker does that I am still fond of. When it drops an object to the floor, it reads the bounds out of the vertex positions rather than out of <code>obj.bound_box</code>, because that box is a cache and a mesh edit does not refresh it. The version that trusted the cache deleted a stray vertex 6m below a prop and then dropped the object using a box that still contained it. The prop came to rest 9.75m in the air, identically on all seven builds.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/wearforge?src=portfolio">Get WearForge, $14</a>
+  </p>
+
+<!-- /section: blender-s-extension-platform-turned-my-mesh-checker-down-and -->
 
   <h2>Free add-ons</h2>
 
