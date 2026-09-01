@@ -15,9 +15,18 @@ just what happens when you finally organise things.
 
 ## Install
 
-Grab any `.py` from [`addons/`](addons/). In Blender:
-**Edit → Preferences → Add-ons → Install**, pick the file, tick it on.
-Panels show up in the viewport sidebar (press <kbd>N</kbd>) under **BTools**.
+Grab any `.py` from [`addons/`](addons/). Where the Install button lives
+depends on your Blender, and it moved at 4.2:
+
+On 3.6 and 4.1: Edit → Preferences → Add-ons → **Install…**, pick the file.
+
+On 4.2 and newer: Edit → Preferences → Add-ons → the **∨** button at the top
+right → **Install from Disk…**, pick the same file. That dialog takes a plain
+`.py` as well as an extension zip; Blender's own file filter for it is
+`*.zip;*.py`.
+
+Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
+under **BTools**.
 
 ## The tools
 
@@ -38,29 +47,34 @@ Panels show up in the viewport sidebar (press <kbd>N</kbd>) under **BTools**.
 
 ## Blender versions
 
-Tested on **3.6 LTS, 4.2 LTS, 4.5 LTS, 5.0 and 5.2**.
+Tested on **3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1**.
+Seven builds, not five: 4.5.12 and 4.5.13 behave differently often
+enough to be worth running both, and so do 5.2.0 and 5.2.1.
 
 ```bash
 blender --background --factory-startup --python test_all.py
 ```
 
 `test_all.py` installs each add-on, enables it, runs its operators against
-real geometry and unloads it again. Twelve tools across five versions is sixty
-combinations. Checking that something registers isn't worth much on its own,
+real geometry and unloads it again. Twelve tools across seven versions is 84
+combinations, and all 84 passed on 1 September 2026. Checking that something registers isn't worth much on its own,
 since an add-on that registers and then throws the first time you click it is
 worse than one that won't install at all.
 
 It's caught real things. The turntable worked on 3.6 and 4.2 and threw on 5.x,
 because `Action.fcurves` stopped existing when Blender moved Actions over to
-layers and slots in 4.4.
+layers and slots. **This used to say 4.4 and that was wrong.** Making an action
+and asking for `fcurves`: it is there on 3.6.23, 4.2.23, 4.5.12 and 4.5.13, and
+gone on 5.0.1, 5.2.0 and 5.2.1. The break lands at 5.0, and a version number
+copied from a release note rather than measured is how it sat here wrong.
 
 ## Write-ups
 
 Longer notes live on the site above. They're about things that bit me while
 building this lot, with the numbers I measured rather than general advice.
 
-- What broke between Blender 3.6 and 5.2: `Action.fcurves` disappearing in 4.4,
-  FBX export behaving differently on 5.0.1, and what a five-version test matrix
+- What broke between Blender 3.6 and 5.2: `Action.fcurves` disappearing at 5.0,
+  FBX export behaving differently on 5.0.1, and what a seven-version test matrix
   actually catches.
 - Sixteen sliders, and what each one actually does. A parameter sweep of a
   generator, written while documenting it, which is how I found that one of my
