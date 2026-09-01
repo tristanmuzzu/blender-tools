@@ -30,6 +30,13 @@ Blender's own file filter for it is `*.zip;*.py`.
 Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
+If you would rather take the lot in one file, all twelve are on Gumroad at
+$0, scripts and drag-and-drop zips together, no account needed beyond the
+email the download asks for:
+[all twelve in one zip](https://tristaneer2.gumroad.com/l/blender-tools?src=freetools-readme).
+It is the same twelve add-ons out of this repo, byte for byte, so use whichever
+is less trouble.
+
 The zip and the `.py` are the same add-on. The zip adds a manifest and the
 licence, and every one of them is installed, enabled, checked on disk and
 uninstalled again on all seven Blender versions before it goes out.
