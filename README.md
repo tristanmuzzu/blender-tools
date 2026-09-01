@@ -38,7 +38,7 @@ uninstalled again on all seven Blender versions before it goes out.
 
 | Add-on | What it does |
 |---|---|
-| [Asset Check](addons/bt_asset_check.py) | Checks transforms, scale, manifold geometry and UVs before export, and fixes the mechanical stuff |
+| [Asset Check](addons/bt_asset_check.py) | Checks transforms, scale, manifold geometry and UVs before export, and fixes the mechanical stuff. Also catches a rotated object under a non-uniformly scaled parent, which exports wrong and looks right in Blender |
 | [Surface Scatter](addons/bt_surface_scatter.py) | Scatters instances over a surface, weighted by face area, with a slope limit |
 | [Quick Export](addons/bt_quick_export.py) | glTF or FBX with Unity and Unreal axes already right |
 | [Mesh Stats](addons/bt_mesh_stats.py) | Live triangle, n-gon, loose vertex and manifold counts |

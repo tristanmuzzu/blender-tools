@@ -1,7 +1,7 @@
 bl_info = {
     "name": "BT Asset Check",
     "author": "Tristan Muzzu",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (3, 6, 0),
     "location": "View3D > Sidebar > BTools",
     "description": "Pre-export checks: transforms, scale, manifold geometry, UVs",
@@ -60,6 +60,40 @@ def _world_bounds(obj):
                     max(p.z for p in pts))))
 
 
+def _parent_shear(obj):
+    """The one defect on this list that Blender's own viewport will not show.
+
+    A rotated child under a non-uniformly scaled parent is a shear, and the
+    glTF and FBX formats have no way to write one: an exporter has to drop it,
+    so the object lands somewhere else in the target engine while Blender keeps
+    drawing it in the right place. Measured on 2026-08-27 as **410.842 mm** of
+    displacement on a 1 m object, on 3.6.23, 4.5.13 and 5.2.1, and re-measured
+    on all seven binaries on 2026-08-28. That is F-134, and
+    `pipeline/probes/gltf_parent_inverse_shear.py` is the reproduction.
+
+    Returns the parent's name when it fires and None when it does not, so the
+    message can name the object the user has to go and fix rather than the one
+    they had selected.
+
+    Deliberately not checked here: whether the *child* is scaled. A uniformly
+    scaled parent with any rotation is fine, and a non-uniformly scaled parent
+    with an unrotated child is fine too. Both were confirmed as controls before
+    this row was written, at 0.0001 mm and 0.0000 mm.
+    """
+    parent = obj.parent
+    if parent is None:
+        return None
+    if all(abs(r) <= 1e-4 for r in obj.rotation_euler):
+        return None
+    sx, sy, sz = parent.matrix_world.to_scale()
+    biggest, smallest = max(sx, sy, sz), min(sx, sy, sz)
+    if smallest <= 1e-9:
+        return None
+    if biggest / smallest - 1.0 <= 1e-4:
+        return None
+    return parent.name
+
+
 def _check(obj):
     issues = []
 
@@ -67,6 +101,12 @@ def _check(obj):
         issues.append(("Scale not applied", 'ERROR'))
     if any(abs(r) > 1e-4 for r in obj.rotation_euler):
         issues.append(("Rotation not applied", 'INFO'))
+
+    sheared = _parent_shear(obj)
+    if sheared is not None:
+        issues.append((f"Rotated under a non-uniformly scaled parent "
+                       f"({sheared}): exports wrong, Apply All Transforms",
+                       'ERROR'))
 
     bounds = _world_bounds(obj)
     if bounds is not None:
