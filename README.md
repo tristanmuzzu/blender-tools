@@ -20,13 +20,19 @@ depends on your Blender, and it moved at 4.2:
 
 On 3.6 and 4.1: Edit → Preferences → Add-ons → **Install…**, pick the file.
 
-On 4.2 and newer: Edit → Preferences → Add-ons → the **∨** button at the top
-right → **Install from Disk…**, pick the same file. That dialog takes a plain
-`.py` as well as an extension zip; Blender's own file filter for it is
-`*.zip;*.py`.
+On 4.2 and newer: grab the matching zip from [`dist/`](dist/) instead and drag
+it into the Blender window. One dialog, one confirm, done. The zips carry an
+extension manifest, which is what makes drag-and-drop work. If you would rather
+use the menu it is Edit → Preferences → Add-ons → the **∨** button at the top
+right → **Install from Disk…**, and that dialog takes the plain `.py` too;
+Blender's own file filter for it is `*.zip;*.py`.
 
 Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
+
+The zip and the `.py` are the same add-on. The zip adds a manifest and the
+licence, and every one of them is installed, enabled, checked on disk and
+uninstalled again on all seven Blender versions before it goes out.
 
 ## The tools
 
