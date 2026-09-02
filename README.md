@@ -122,12 +122,14 @@ cuts panel seams into a model you already have. It finds the flat areas,
 divides each one into panels, and sinks a real groove along every seam, and it
 writes a `panel` face attribute so you can shade panels separately. $12.
 It follows your model where it can: the lip of a recess or the edge of a
-boolean cut becomes a preferred cut line, and on the hull in its cover image 7
-of the 73 seams land exactly on one.
-Two catches, up front. A seam stops at the edge of a flat area, so a seam on a
-deck and one on the hull side next to it will not line up. And a plate that
-just sits on a surface shares no edge with it, so there's nothing there for the
-follow pass to find.
+boolean cut becomes a preferred cut line, and neighbouring surfaces are laid
+out knowing where each other's seams meet the shared edge. On the hull in its
+cover image 7 of the 72 seams land on a line the model already had and 35 agree
+with a neighbour's.
+Two catches, up front. A groove still stops inside its own flat area rather
+than running round a corner as one cut, so up close a corner is two grooves
+that line up. And a plate that just sits on a surface shares no edge with it,
+so there's nothing there for the follow pass to find.
 
 **[Sci-Fi Corridor Kit](https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=freetools-readme)**
 is six modules that tile on a 4 metre grid: a straight, a 90 degree corner, a T
