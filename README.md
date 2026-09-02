@@ -99,7 +99,7 @@ building this lot, with the numbers I measured rather than general advice.
 
 ## The paid ones
 
-These twelve are free and stay free. Three things in here aren't, and all three
+These twelve are free and stay free. Four things in here aren't, and all four
 run on the same seven Blender versions as the twelve above.
 
 **[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**
@@ -116,6 +116,15 @@ Two catches, up front. It changes a close shot and it does not change a
 thumbnail, which is measured rather than a guess. And on 3.6 and 4.2 the same
 seed gives the same counts but not quite the same vertex positions, median
 1.24 mm on a 2 m part, because Blender's own bevel changed at 4.5.
+
+**[LineForge](https://tristaneer2.gumroad.com/l/lineforge?src=freetools-readme)**
+cuts panel seams into a model you already have. It finds the flat areas,
+divides each one into panels, and sinks a real groove along every seam, and it
+writes a `panel` face attribute so you can shade panels separately. $12.
+Two catches, up front. A seam stops at the edge of a flat area, so a seam on a
+deck and one on the hull side next to it will not line up. And seams come from
+a seeded layout rather than from your model's structure, so it won't follow the
+foot of a raised plate on its own.
 
 **[Sci-Fi Corridor Kit](https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=freetools-readme)**
 is six modules that tile on a 4 metre grid: a straight, a 90 degree corner, a T
