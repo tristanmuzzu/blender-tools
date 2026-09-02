@@ -334,6 +334,50 @@
   <p class="meta">Blender 3.6 through 5.2, seven binaries, on the zip you
   download rather than a rebuild of it. GPL v3.</p>
 
+  <h2 id="lineforge">LineForge</h2>
+
+  <p>
+    Panel seams cut into a model you already have. It finds the flat areas,
+    divides each one into panels, and sinks a real groove along every seam. No
+    decals and no normal map, so it survives export and it reads in the
+    silhouette up close. Every face comes back carrying a <code>panel</code>
+    attribute, one value per panel and 0.0 on the seams, so you can tint or
+    roughen panels separately without selecting anything by hand.
+  </p>
+
+  <figure>
+    <img src="img/lineforge_compare.jpg" alt="The same hull blockout twice: on the left an untouched shape with a prow and two deck plates, on the right the same shape with recessed panel seams across the deck, the prow and both sides, and each panel shaded a slightly different tone">
+    <figcaption>Same blockout both sides, at 8 panels per region, an
+    11&nbsp;mm seam width and a 7&nbsp;mm depth. 211 flat regions found and 11
+    cut, 73 seams, 84 panels, 216 faces in and 1,103 out, 3,366 triangles, 0
+    non-manifold edges. The tones on the right are the <code>panel</code>
+    attribute driving base colour and roughness, nothing hand-assigned.</figcaption>
+  </figure>
+
+  <p>
+    The thing that took longest was not the cutting. A groove that ran to the
+    edge of its flat area left its end wall lying in the neighbouring area's
+    plane, back to back with a surface already there: 15 zero-thickness flaps
+    on one test slab, manifold, real area, and invisible to every count I had.
+    The render missed them too. What found them was asking the slab
+    whether any face on its bottom plane pointed upwards, and that question is
+    now in the test suite with a planted case that produces 62 of them.
+  </p>
+
+  <p>
+    Being straight about the limits, both of which are on the store page too. A
+    seam stops at the border of a flat area, so a seam on a deck and one on the
+    hull side next to it will not line up. And seams come from a seeded layout
+    rather than from your model, so nothing runs a seam along the foot of a
+    raised plate because the plate is there.
+  </p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/lineforge?src=portfolio">Get LineForge, $12</a>
+  </p>
+  <p class="meta">Blender 3.6 through 5.2, seven binaries, on the zip you
+  download rather than a rebuild of it. GPL v3.</p>
+
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
   <p>23 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
