@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>23 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>24 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#gumroad-indexes-a-product-in-the-first-few-days-of-the-month">Gumroad indexes a product in the first few days of the month it was created, and then the file freezes</a></li>
     <li><a href="#blender-s-extension-platform-turned-my-mesh-checker-down-and">Blender&#x27;s extension platform turned my mesh checker down, and the add-on it already had is called something else</a></li>
     <li><a href="#my-mesh-passed-every-count-i-had-and-rendered-with-a-dark-cr">My mesh passed every count I had and rendered with a dark crease down the middle of a panel</a></li>
     <li><a href="#two-viewport-operators-that-need-a-window-and-only-one-of-th">Two viewport operators that need a window, and only one of them says so</a></li>
@@ -1860,6 +1861,51 @@ mesh check         32 results</code></pre>
   </p>
 
 <!-- /section: blender-s-extension-platform-turned-my-mesh-checker-down-and -->
+
+  <!-- section: gumroad-indexes-a-product-in-the-first-few-days-of-the-month -->
+  <h2 id="gumroad-indexes-a-product-in-the-first-few-days-of-the-month">Gumroad indexes a product in the first few days of the month it was created, and then the file freezes</h2>
+
+  <p>None of my five Gumroad products can be found by search. Not ranked badly. Absent. Searching for each one by its exact quoted name returned it zero times, five for five, while competing add-ons for the same job return a full page.</p>
+
+  <p>The obvious explanations went first, on 2 September. There&#x27;s no <code>noindex</code> on my pages, in the meta or in an <code>X-Robots-Tag</code>, and a competitor&#x27;s indexed page returns identical headers. Paid products aren&#x27;t excluded as a class: a random sample of 14 entries from Gumroad&#x27;s own sitemap came back 12 paid to 2 free. It isn&#x27;t sales or ratings either, because 37 of the 38 paid products in a 40-entry sample have zero ratings, same as mine.</p>
+
+  <p>So I went to the sitemaps themselves. <code>gumroad.com/robots.txt</code> advertises 358 of them, and the product ones are monthly files at <code>public-files.gumroad.com/sitemap/products/monthly/YYYY/M/sitemap.xml.gz</code>.</p>
+
+  <p>Here&#x27;s what they say.</p>
+
+  <p>The September 2026 file had 6,962 URLs when I first read it and 14,343 the next morning, so it does get rebuilt. Two of my five products are in it. All five were updated on the same day, 2 September, so &quot;updated recently&quot; isn&#x27;t the rule. The two that are in it are the two I created in September. The three that aren&#x27;t were created in August.</p>
+
+  <p>That looked like a creation-month partition, which would be fine, except my August products aren&#x27;t in the August files either. The reason is the build cadence, and it&#x27;s the part worth knowing.</p>
+
+  <p>I checked twelve consecutive monthly files. In every single one, the newest <code>&lt;lastmod&gt;</code> inside the file is the same instant as the file&#x27;s own <code>Last-Modified</code> header. The builds land on the 3rd, 4th or 5th of their month:</p>
+
+  <pre><code>2025/10  built 05 Oct    2026/4  built 03 Apr
+2025/11  built 05 Nov    2026/5  built 04 May
+2025/12  built 05 Dec    2026/6  built 04 Jun
+2026/1   built 04 Jan    2026/7  built 05 Jul
+2026/2   built 04 Feb    2026/9  built 03 Sep
+2026/3   built 05 Mar</code></pre>
+
+  <p>August 2026 ran longer and still stopped. Its two creation files were written on 11 August and hold 81,175 URLs with lastmods from the 1st to the 11th. Nothing was added after that. I published one of my add-ons on 15 August, four days past that cutoff, and it has never appeared in a sitemap since.</p>
+
+  <p>There is a way back in, and it&#x27;s rare. The August folder has a third file, written on the 23rd, holding 49,685 URLs of mixed age reaching back to September 2024. That&#x27;s a backfill sweep. It didn&#x27;t pick up my products, and I can&#x27;t tell you what decides which ones it does pick up. The only other one I found in twenty-four months of files is the September 2024 set, which was written in August 2025, eleven months late.</p>
+
+  <p>If you want to check your own, it&#x27;s two minutes:</p>
+
+  <pre><code>import urllib.request, gzip, re
+u = &quot;https://public-files.gumroad.com/sitemap/products/monthly/2026/9/sitemap.xml.gz&quot;
+raw = urllib.request.urlopen(u).read()
+txt = gzip.decompress(raw).decode()
+print(len(re.findall(r&quot;&lt;loc&gt;&quot;, txt)), &quot;urls&quot;)
+print([l for l in re.findall(r&quot;&lt;loc&gt;(.*?)&lt;/loc&gt;&quot;, txt) if &quot;yourname&quot; in l])</code></pre>
+
+  <p>Swap the year and month for the month you launched in.</p>
+
+  <p>What I can&#x27;t tell you is whether any of this is worth anything. Being in a sitemap isn&#x27;t traffic, it&#x27;s permission to be crawled, and I have no sales either way. What I do have now is a clean experiment I didn&#x27;t have to set up: one of my four paid products is in the sitemap and three aren&#x27;t, same store, same seller, same everything else. In three weeks the referrer table will say whether that made a difference, and I&#x27;ll write that down too, including if the answer is no.</p>
+
+  <p>The practical bit, if you&#x27;re planning a launch: put it up in the first two or three days of a month. If it&#x27;s ready on the 20th, ship it on the 20th anyway. A product people can buy beats a product Google knows about, and I&#x27;d rather be wrong about a sitemap than sit on finished work for eleven days.</p>
+
+<!-- /section: gumroad-indexes-a-product-in-the-first-few-days-of-the-month -->
 
   <h2>Free add-ons</h2>
 
