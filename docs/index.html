@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>25 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>26 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#an-area-in-background-blender-accepts-a-new-type-reports-the">An area in background Blender accepts a new type, reports the new type, and keeps the old space</a></li>
     <li><a href="#your-operator-s-init-broke-in-blender-4-5-and-the-error-that">Your operator&#x27;s <code>__init__</code> broke in Blender 4.5, and the error that tells you so arrives in 5.0</a></li>
     <li><a href="#gumroad-indexes-a-product-in-the-first-few-days-of-the-month">Gumroad indexes a product in the first few days of the month it was created, and then the file freezes</a></li>
     <li><a href="#blender-s-extension-platform-turned-my-mesh-checker-down-and">Blender&#x27;s extension platform turned my mesh checker down, and the add-on it already had is called something else</a></li>
@@ -1974,6 +1975,54 @@ print(bpy.ops.wm.my_thing())</code></pre>
   </p>
 
 <!-- /section: your-operator-s-init-broke-in-blender-4-5-and-the-error-that -->
+
+  <!-- section: an-area-in-background-blender-accepts-a-new-type-reports-the -->
+  <h2 id="an-area-in-background-blender-accepts-a-new-type-reports-the">An area in background Blender accepts a new type, reports the new type, and keeps the old space</h2>
+
+  <p>Set an editor&#x27;s type from a script in <code>blender -b</code> and it tells you it worked:</p>
+
+  <pre><code>import bpy
+area = bpy.data.screens[0].areas[0]
+print(area.type, type(area.spaces.active).__name__)
+area.type = &quot;NLA_EDITOR&quot;
+print(area.type, type(area.spaces.active).__name__)</code></pre>
+
+  <p>On 4.2.23, 5.0.1 and 5.2.1 that prints <code>PROPERTIES SpaceProperties</code> and then <code>NLA_EDITOR SpaceProperties</code>. The type says one thing, the space says another, and <code>len(area.spaces)</code> is still 1. Nothing raised. Nothing warned.</p>
+
+  <p>Everything downstream then fails in a way that points somewhere else. I built two NLA strips, selected them, and ran the operator inside a <code>temp_override</code> on that area:</p>
+
+  <pre><code>RuntimeError: Operator bpy.ops.nla.transition_add.poll() failed, context is incorrect</code></pre>
+
+  <p>Which reads like a selection problem, or a missing region, or the wrong strips. It isn&#x27;t any of those. I tried four override shapes, up to one passing <code>window</code>, <code>screen</code>, <code>area</code>, <code>region</code>, <code>space_data</code>, <code>object</code>, <code>active_object</code> and <code>selected_objects</code> together, and every one of them failed the same way, because the space the operator polls against was a Properties editor the whole time.</p>
+
+  <p>This bites people who never touch <code>area.type</code> at all. The common recipe for using an editor operator headlessly is to hunt <code>bpy.data.screens</code> for an area of the right type:</p>
+
+  <pre><code>for screen in bpy.data.screens:
+    for area in screen.areas:
+        if area.type == &quot;NLA_EDITOR&quot;:
+            ...</code></pre>
+
+  <p>Under <code>--factory-startup</code> that loop finds nothing, because there is no NLA editor in the default screens. I counted them: 49 areas on 5.0.1 and 5.2.1, 51 on 4.2.23, spread over <code>CONSOLE</code>, <code>DOPESHEET_EDITOR</code>, <code>FILE_BROWSER</code>, <code>IMAGE_EDITOR</code>, <code>INFO</code>, <code>NODE_EDITOR</code>, <code>OUTLINER</code>, <code>PROPERTIES</code>, <code>SPREADSHEET</code>, <code>TEXT_EDITOR</code> and <code>VIEW_3D</code>. No NLA, no sequencer, no graph editor. So the loop returns <code>None</code>, and if you spread that into <code>temp_override(**None)</code> the traceback you get is about argument unpacking, which is three steps from the actual problem.</p>
+
+  <p>Retyping an area to fill the gap is the obvious next move and it&#x27;s the thing that quietly doesn&#x27;t work.</p>
+
+  <p>What does work is dropping <code>-b</code>. Run the same script under a virtual display instead:</p>
+
+  <pre><code>xvfb-run -a blender --factory-startup --python script.py</code></pre>
+
+  <p>Now <code>area.type = &quot;NLA_EDITOR&quot;</code> gives you a real <code>SpaceNLA</code>, and <code>bpy.ops.nla.transition_add()</code> returns <code>{&#x27;FINISHED&#x27;}</code>. The track goes from two strips to three, and the middle one comes back typed <code>TRANSITION</code>. Same on 3.6.23, 4.2.23, 5.0.1 and 5.2.1, so this isn&#x27;t a recent regression in either direction.</p>
+
+  <p>There&#x27;s no operator-free route to a transition strip that I could find, and I did look: <code>strip.type</code> is read-only, and <code>NlaStrips.new</code> takes <code>name</code>, <code>start</code> and <code>action</code> and nothing else. If you want a transition you want that operator, and if you want that operator you want a window.</p>
+
+  <p>The wider lesson is the one I keep relearning here. A setter that reports success it didn&#x27;t deliver is worse than one that raises, because everything downstream tests the wrong hypothesis. I&#x27;ve now got several of these written down on this project, including three files that trusted an exit code Blender can&#x27;t set: a <code>--python</code> script that dies with an unhandled exception still exits 0.</p>
+
+  <p>One caveat on all of the above. My xvfb runs never quit cleanly, so I read the output and killed them on a timer rather than checking a return code, which is exactly the thing I just complained about. The strip counts are real and printed; the tidiness isn&#x27;t.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: an-area-in-background-blender-accepts-a-new-type-reports-the -->
 
   <h2>Free add-ons</h2>
 
