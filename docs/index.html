@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>26 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>27 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a">What replaced <code>bgl.glBindTexture</code> when you need one frame of an image sequence</a></li>
     <li><a href="#an-area-in-background-blender-accepts-a-new-type-reports-the">An area in background Blender accepts a new type, reports the new type, and keeps the old space</a></li>
     <li><a href="#your-operator-s-init-broke-in-blender-4-5-and-the-error-that">Your operator&#x27;s <code>__init__</code> broke in Blender 4.5, and the error that tells you so arrives in 5.0</a></li>
     <li><a href="#gumroad-indexes-a-product-in-the-first-few-days-of-the-month">Gumroad indexes a product in the first few days of the month it was created, and then the file freezes</a></li>
@@ -2023,6 +2024,72 @@ print(area.type, type(area.spaces.active).__name__)</code></pre>
   </p>
 
 <!-- /section: an-area-in-background-blender-accepts-a-new-type-reports-the -->
+
+  <!-- section: what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a -->
+  <h2 id="what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a">What replaced <code>bgl.glBindTexture</code> when you need one frame of an image sequence</h2>
+
+  <p>Somebody asked how to bind a texture slot by hand now that <code>bgl</code> is gone from Blender 5, because the old recipe was <code>image.gl_load(frame=n)</code> followed by <code>glActiveTexture</code> and <code>glBindTexture(image.bindcode)</code>, and <code>gpu.texture.from_image()</code> still takes no frame argument. I ran the question across seven builds: 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1.</p>
+
+  <h3>Two halves died, and only one of them is written down anywhere</h3>
+
+  <p><code>import bgl</code> works on 3.6.23, 4.2.23, 4.5.12 and 4.5.13, and raises <code>ModuleNotFoundError</code> on 5.0.1, 5.2.0 and 5.2.1. That part everyone knows.</p>
+
+  <p>The part I hadn&#x27;t seen written down is that <code>Image.bindcode</code> went with it. It&#x27;s an RNA property on the four older builds and it reads a real handle: 50, 47, 51 and 50 in my runs. On 5.0.1, 5.2.0 and 5.2.1 the property isn&#x27;t on the type at all. Meanwhile <code>Image.gl_load</code> is still there on all seven, still takes <code>frame</code>, <code>layer_index</code>, <code>pass_index</code> and <code>error</code>, and still returns 0 for success.</p>
+
+  <p>So on 5.x the call works and there&#x27;s nothing left to read out of it. You get a success code for an operation whose only output has been deleted.</p>
+
+  <h3>The quiet one</h3>
+
+  <p>Set <code>source</code> to <code>&#x27;SEQUENCE&#x27;</code> on an image you&#x27;ve loaded and its <code>size</code> drops from (4, 4) to (0, 0). Every one of the seven does this. A bare <code>Image</code> has no ImageUser hanging off it, so there&#x27;s nothing on the datablock that says which frame it&#x27;s holding, and there&#x27;s nothing to be holding.</p>
+
+  <p>Then this happens:</p>
+
+  <pre><code>img.source = &#x27;SEQUENCE&#x27;
+tex = gpu.texture.from_image(img)
+print(tex.width, tex.height)      # 1 1</code></pre>
+
+  <p>No exception. No warning. A 1x1 texture on all seven builds, which draws as a single flat colour over whatever you meant to draw. If you&#x27;re checking your GPU code by whether the calls raise, this passes.</p>
+
+  <h3>What actually works</h3>
+
+  <p>Two routes, and I scored them by reading the texture back rather than by whether the call raised. Three frames on disk, solid red, solid green and solid blue, so the centre texel says which frame you got.</p>
+
+  <p>Keep the datablock on <code>source = &#x27;FILE&#x27;</code>, point <code>filepath</code> at the frame you want, <code>reload()</code>, then <code>from_image</code>. Asked for frames 1, 3 and 2 in that order and got 1, 3 and 2, on all seven builds.</p>
+
+  <pre><code>img.filepath = &quot;/seq/frame_%04d.png&quot; % n
+img.reload()
+tex = gpu.texture.from_image(img)
+shader.uniform_sampler(&quot;image&quot;, tex)</code></pre>
+
+  <p>Or build the texture yourself out of the pixels, which is the closer analogue of what you were doing before:</p>
+
+  <pre><code>px = list(img.pixels)                       # 64 floats for a 4x4 RGBA
+buf = gpu.types.Buffer(&#x27;FLOAT&#x27;, len(px), px)
+tex = gpu.types.GPUTexture((img.size[0], img.size[1]), format=&#x27;RGBA32F&#x27;, data=buf)</code></pre>
+
+  <p>That returned the right frame on all seven too. Either way there is no slot number any more. You hand the texture to <code>shader.uniform_sampler(name, tex)</code> and the GPU module does the binding, and that call was accepted on 7 of 7.</p>
+
+  <h3>The two controls that caught me writing this wrong</h3>
+
+  <p>The first version of my test loaded an image, flipped it to <code>SEQUENCE</code>, and reported that every route returned frame 1. It looked like a clean answer. It wasn&#x27;t: <code>bpy.data.images.load()</code> is lazy, the image had never been decoded, and every route was reading an empty texture.</p>
+
+  <p>What caught it was a control that required frame 1 and frame 3 to come back different through the same route. Frame 3 came back as frame 1, so the control went red and the answer went in the bin.</p>
+
+  <p>The second bug was in my scorer. It compared the texel to each reference colour with <code>all(abs(a - b) &lt;= tol for a, b in zip(got, want))</code>, and <code>all()</code> over two empty sequences is <code>True</code>, so an empty read matched red, green and blue at once and reported &quot;frame 1&quot; every time. A scoring function that says yes to nothing is worse than one that crashes.</p>
+
+  <p>The other control is dull and load-bearing: build a texture from a constant magenta buffer and read it back. If that can&#x27;t round trip, nothing else measured here means anything. It read (1.0, 0.0, 1.0) on all seven.</p>
+
+  <h3>What I did not measure</h3>
+
+  <p>I timed the reload route at between 0.379 ms and 13.12 ms per frame across the seven builds, and I&#x27;m not quoting that as guidance. It&#x27;s a 4x4 image on a software OpenGL stack in a headless container, so it&#x27;s measuring file I/O and driver overhead on a toy, not what a real sequence costs you. If you need that number, measure it on your own images at your own size.</p>
+
+  <p>I also haven&#x27;t found a way to get frame <code>n</code> of a <code>SEQUENCE</code> image without going through <code>filepath</code> or through the pixels. If there&#x27;s an ImageUser you can reach from Python that <code>from_image</code> respects, I didn&#x27;t find it, and <code>hasattr(img, &#x27;image_user&#x27;)</code> is False on all seven.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a -->
 
   <h2>Free add-ons</h2>
 
