@@ -1,7 +1,7 @@
 bl_info = {
     "name": "BT Mesh Stats",
     "author": "Tristan Muzzu",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (3, 6, 0),
     "location": "View3D > Sidebar > BTools",
     "description": "Live triangle, n-gon, loose vertex and UV readout for the active mesh",
@@ -74,6 +74,16 @@ class BT_OT_select_ngons(Operator):
     def execute(self, context):
         if context.object.mode != 'EDIT':
             bpy.ops.object.mode_set(mode='EDIT')
+        # Face select mode first, and this is the whole operator working or
+        # not. Blender opens in vertex select mode, and there the selection
+        # flushes outward: selecting an n-gon selects its vertices, and every
+        # face sharing those vertices comes with it. On an 8-sided cylinder,
+        # whose two n-gon caps between them own every vertex in the mesh, that
+        # is all 10 faces out of 10, measured on 3.6.23, 4.2.23, 5.0.1 and
+        # 5.2.1. In face mode the same call selects the 2 caps on all four.
+        # The mode is left on face rather than restored, because a selection
+        # of faces is the thing this operator exists to hand you.
+        context.tool_settings.mesh_select_mode = (False, False, True)
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.mesh.select_face_by_sides(number=4, type='GREATER')
         return {'FINISHED'}

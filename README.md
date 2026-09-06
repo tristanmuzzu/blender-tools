@@ -70,11 +70,22 @@ blender --background --factory-startup --python test_all.py
 
 `test_all.py` installs each add-on, enables it, runs its operators against
 real geometry and unloads it again. Twelve tools across seven versions is 84
-combinations, and all 84 passed on 1 September 2026. Checking that something registers isn't worth much on its own,
+combinations, and all 84 passed on 6 September 2026. Checking that something registers isn't worth much on its own,
 since an add-on that registers and then throws the first time you click it is
 worse than one that won't install at all.
 
-It's caught real things. The turntable worked on 3.6 and 4.2 and threw on 5.x,
+It caught one the day I wrote this paragraph, which is the sort of timing that
+makes you check the rest. Eighteen operators live in these twelve add-ons and
+the suite was calling seventeen of them; Mesh Stats was tested through a module
+function instead, so I could put `raise RuntimeError` at the top of Select
+N-gons and still get `12/12 tools passed`. Writing the missing case found a
+real bug behind it. Blender opens in vertex select mode, selection flushes
+outward from there, and on an 8-sided cylinder the two n-gon caps own every
+vertex in the mesh, so **Select N-gons selected all 10 faces of 10** on
+3.6.23, 4.2.23, 5.0.1 and 5.2.1. It sets face select mode now and picks the 2
+caps. That's 1.1.0.
+
+It's caught real things before that too. The turntable worked on 3.6 and 4.2 and threw on 5.x,
 because `Action.fcurves` stopped existing when Blender moved Actions over to
 layers and slots. **This used to say 4.4 and that was wrong.** Making an action
 and asking for `fcurves`: it is there on 3.6.23, 4.2.23, 4.5.12 and 4.5.13, and
