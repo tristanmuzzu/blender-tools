@@ -2145,7 +2145,12 @@ print(vh.hexdigest()[:12], ph.hexdigest()[:12])</code></pre>
 
   <p>Four of the five still do exactly what their page says. On every one of those seven builds.</p>
 
-  <p>| Question | Views | Answer dated | Result | | --- | --- | --- | --- | | 7064, switch vertex/edge/face mode | 7,644 | 2014-02-16 | 7/7 | | 7412, rename selected objects | 46,136 | 2014-02-28 | 7/7 | | 1879, dump an object&#x27;s properties | 63,102 | 2013-07-18 | 7/7 | | 43086, add, move and rotate an object | 33,450 | 2015-12-15 | 7/7 | | 3441, put objects into edit mode | 38,902 | 2013-10-22 | 0/7 |</p>
+  <pre><code>question                                  views   answer dated   result
+7064   switch vertex/edge/face mode        7,644   2014-02-16     7/7
+7412   rename selected objects            46,136   2014-02-28     7/7
+1879   dump an object&#x27;s properties        63,102   2013-07-18     7/7
+43086  add, move and rotate an object     33,450   2015-12-15     7/7
+3441   put objects into edit mode         38,902   2013-10-22     0/7</code></pre>
 
   <p><code>bpy.ops.mesh.select_mode(type=&quot;VERT&quot;)</code> is twelve years old and does the same thing on 5.2.1 that it did in 2014. So does looping over <code>bpy.context.selected_objects</code> and setting <code>obj.name</code>. The date on an answer tells you almost nothing about whether the code runs.</p>
 
