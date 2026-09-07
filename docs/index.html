@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>27 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>28 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#blender-s-uv-sphere-hands-back-a-different-face-order-every-">Blender&#x27;s UV sphere hands back a different face order every time you add one</a></li>
     <li><a href="#what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a">What replaced <code>bgl.glBindTexture</code> when you need one frame of an image sequence</a></li>
     <li><a href="#an-area-in-background-blender-accepts-a-new-type-reports-the">An area in background Blender accepts a new type, reports the new type, and keeps the old space</a></li>
     <li><a href="#your-operator-s-init-broke-in-blender-4-5-and-the-error-that">Your operator&#x27;s <code>__init__</code> broke in Blender 4.5, and the error that tells you so arrives in 5.0</a></li>
@@ -2090,6 +2091,37 @@ tex = gpu.types.GPUTexture((img.size[0], img.size[1]), format=&#x27;RGBA32F&#x27
   </p>
 
 <!-- /section: what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a -->
+
+  <!-- section: blender-s-uv-sphere-hands-back-a-different-face-order-every- -->
+  <h2 id="blender-s-uv-sphere-hands-back-a-different-face-order-every-">Blender&#x27;s UV sphere hands back a different face order every time you add one</h2>
+
+  <p>Add a UV sphere in Blender, run a seeded script over it, undo, add another UV sphere, run the same script with the same seed. You get a different answer. I spent an hour assuming that was my bug, and it isn&#x27;t.</p>
+
+  <p>Here&#x27;s the shape of it. My plating generator walks <code>bm.faces</code> in order and consumes a seeded RNG as it goes, so the output is a function of the seed and the face order together. On a cube that&#x27;s rock solid. On a sphere the plate count moved between two runs of the same Blender on the same machine: 254 one time, 257 the next. Same seed, same settings, same binary.</p>
+
+  <p>So I hashed the input instead of staring at the generator. Two hashes, one over vertex positions to nine decimal places, one over each polygon&#x27;s tuple of vertex indices:</p>
+
+  <p>import hashlib, bpy bpy.ops.wm.read_factory_settings(use_empty=True) bpy.ops.mesh.primitive_uv_sphere_add() me = bpy.context.object.data vh = hashlib.sha256() for v in me.vertices: vh.update(b&quot;%.9f %.9f %.9f|&quot; % (v.co.x, v.co.y, v.co.z)) ph = hashlib.sha256() for p in me.polygons: ph.update(str(tuple(p.vertices)).encode()) print(vh.hexdigest()[:12], ph.hexdigest()[:12])</p>
+
+  <p>Run that in a fresh <code>blender -b</code> a few times. The vertex hash is the same every time. The polygon hash is different every time.</p>
+
+  <p>On 5.2.1 the vertex hash is <code>6e00bd154d31</code> on every run I did. On 3.6.23 it&#x27;s <code>c35bf8190ed0</code> on every run. The polygon hash was different on all six. I added a cube to the same script as a control, because a hash that always says &quot;different&quot; is as useless as one that always says &quot;same&quot;, and the cube comes back <code>c761e4fc7a9a</code> and <code>b40c915c2b6b</code> on all six runs across both versions. So the instrument can report &quot;identical&quot; when things are identical. It just never gets to on a sphere.</p>
+
+  <p>The knock-on for anything seeded: five fresh Blenders, default sphere, seed 3, and my plate counts were 239, 259, 240, 229 and 249. That&#x27;s a spread of 30 plates on a mean of 243, from nothing but face numbering. Triangle counts went 9,952 to 10,848.</p>
+
+  <p>The part that matters if you&#x27;re shipping something. Keep the object and it&#x27;s exact. I built one sphere, froze its vertices and polygons, rebuilt the mesh from that four times and plated each copy: 258 plates and 10,048 triangles, four times out of four. So a saved file reopens the same, and undo followed by a fresh Add is what bites you. Those feel like the same operation when you&#x27;re iterating and they aren&#x27;t.</p>
+
+  <p>I don&#x27;t know why Blender does this, and I want to be honest that I didn&#x27;t go and read the C. It could be a parallel loop filling a face array, it could be hash ordering somewhere in the primitive builder. I only know it&#x27;s true on every build I test against, 3.6.23 through 5.2.1, so it has been there for about three years and isn&#x27;t a recent regression. If you know the actual reason I&#x27;d like to hear it.</p>
+
+  <p>Two things I&#x27;d take from this if you write tools. First, if you test that your generator is repeatable, test it on something other than a cube. Mine passed that test for weeks on <code>primitive_cube_add</code>, which is exactly the primitive that can&#x27;t fail it. Second, if a user reports your seeded tool being flaky and you can&#x27;t reproduce it, ask whether they re-added their primitive between runs.</p>
+
+  <p>The reason I was in a position to find this at all is that my product&#x27;s manual claims &quot;the same seed on the same mesh with the same settings always gives you exactly the same result&quot;, and I was re-measuring every number in that manual before shipping a release. The claim survived, because &quot;the same mesh&quot; is doing real work in that sentence. The manual now says all of the above too, since a buyer who adds a fresh sphere is going to think the add-on is broken.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-s-uv-sphere-hands-back-a-different-face-order-every- -->
 
   <h2>Free add-ons</h2>
 
