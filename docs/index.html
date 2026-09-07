@@ -2101,7 +2101,17 @@ tex = gpu.types.GPUTexture((img.size[0], img.size[1]), format=&#x27;RGBA32F&#x27
 
   <p>So I hashed the input instead of staring at the generator. Two hashes, one over vertex positions to nine decimal places, one over each polygon&#x27;s tuple of vertex indices:</p>
 
-  <p>import hashlib, bpy bpy.ops.wm.read_factory_settings(use_empty=True) bpy.ops.mesh.primitive_uv_sphere_add() me = bpy.context.object.data vh = hashlib.sha256() for v in me.vertices: vh.update(b&quot;%.9f %.9f %.9f|&quot; % (v.co.x, v.co.y, v.co.z)) ph = hashlib.sha256() for p in me.polygons: ph.update(str(tuple(p.vertices)).encode()) print(vh.hexdigest()[:12], ph.hexdigest()[:12])</p>
+  <pre><code>import hashlib, bpy
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.mesh.primitive_uv_sphere_add()
+me = bpy.context.object.data
+vh = hashlib.sha256()
+for v in me.vertices:
+    vh.update(b&quot;%.9f %.9f %.9f|&quot; % (v.co.x, v.co.y, v.co.z))
+ph = hashlib.sha256()
+for p in me.polygons:
+    ph.update(str(tuple(p.vertices)).encode())
+print(vh.hexdigest()[:12], ph.hexdigest()[:12])</code></pre>
 
   <p>Run that in a fresh <code>blender -b</code> a few times. The vertex hash is the same every time. The polygon hash is different every time.</p>
 
