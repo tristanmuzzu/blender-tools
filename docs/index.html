@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>28 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>29 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#four-of-five-twelve-year-old-blender-answers-still-run-on-5-">Four of five twelve-year-old Blender answers still run on 5.2.1</a></li>
     <li><a href="#blender-s-uv-sphere-hands-back-a-different-face-order-every-">Blender&#x27;s UV sphere hands back a different face order every time you add one</a></li>
     <li><a href="#what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a">What replaced <code>bgl.glBindTexture</code> when you need one frame of an image sequence</a></li>
     <li><a href="#an-area-in-background-blender-accepts-a-new-type-reports-the">An area in background Blender accepts a new type, reports the new type, and keeps the old space</a></li>
@@ -2132,6 +2133,62 @@ print(vh.hexdigest()[:12], ph.hexdigest()[:12])</code></pre>
   </p>
 
 <!-- /section: blender-s-uv-sphere-hands-back-a-different-face-order-every- -->
+
+  <!-- section: four-of-five-twelve-year-old-blender-answers-still-run-on-5- -->
+  <h2 id="four-of-five-twelve-year-old-blender-answers-still-run-on-5-">Four of five twelve-year-old Blender answers still run on 5.2.1</h2>
+
+  <p>Blender 2.80 rewrote enough of the Python API that &quot;this answer is from 2014&quot; became a reason to skip a Stack Exchange page. I&#x27;ve done it myself, plenty of times. Then I got curious about how often that instinct is actually right, so in September 2026 I measured it instead of guessing.</p>
+
+  <p>Blender Stack Exchange has 718 top-voted questions under the <code>python</code>, <code>scripting</code> and <code>addon</code> tags. 292 of them, holding 2,202,731 views between them, have had no answer activity since before 2.80 shipped in July 2019. That&#x27;s 31.3% of the corpus sitting on the far side of the biggest Python break Blender has had.</p>
+
+  <p>I expected most of that to be dead. So I took five of those pages, ranked by views, lifted the top answer into a script verbatim without fixing anything, and ran each one on 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1.</p>
+
+  <p>Four of the five still do exactly what their page says. On every one of those seven builds.</p>
+
+  <p>| Question | Views | Answer dated | Result | | --- | --- | --- | --- | | 7064, switch vertex/edge/face mode | 7,644 | 2014-02-16 | 7/7 | | 7412, rename selected objects | 46,136 | 2014-02-28 | 7/7 | | 1879, dump an object&#x27;s properties | 63,102 | 2013-07-18 | 7/7 | | 43086, add, move and rotate an object | 33,450 | 2015-12-15 | 7/7 | | 3441, put objects into edit mode | 38,902 | 2013-10-22 | 0/7 |</p>
+
+  <p><code>bpy.ops.mesh.select_mode(type=&quot;VERT&quot;)</code> is twelve years old and does the same thing on 5.2.1 that it did in 2014. So does looping over <code>bpy.context.selected_objects</code> and setting <code>obj.name</code>. The date on an answer tells you almost nothing about whether the code runs.</p>
+
+  <h3>The one that is genuinely dead</h3>
+
+  <p>Question 3441 has 38,902 views and an accepted answer with a score of 18. It opens like this:</p>
+
+  <pre><code>scene.layers = [True] * 20</code></pre>
+
+  <p>Then it assigns <code>scene.objects.active</code>. Both of those went away in 2.80, when layers became collections and the active object moved to the view layer. Every Blender I tested raises the same thing:</p>
+
+  <pre><code>AttributeError: &#x27;Scene&#x27; object has no attribute &#x27;layers&#x27;</code></pre>
+
+  <p>3.6.23 through 5.2.1, no exceptions. That page has been handing out code that cannot run to something like 38,000 visitors for seven years, and it is still the accepted answer.</p>
+
+  <p>What&#x27;s worth noticing is the shape of the failure. The operator calls in these answers mostly survived 2.80 untouched. What broke was the furniture around them: <code>scene.layers</code>, <code>scene.objects.active</code>, the things that describe where an object sits rather than what to do to it. If you&#x27;re triaging an old answer quickly, that&#x27;s where to look first.</p>
+
+  <h3>The failure that passes its own test</h3>
+
+  <p>Question 1879 is the one that bothered me more, because it runs clean 7/7 and the page is still wrong.</p>
+
+  <p>The answer is a small <code>dump()</code> helper that walks <code>dir(obj)</code> and prints every attribute. Fine, works, always will. But the page also prints a sample of its output, and that sample advertises <code>draw_type</code>, <code>dupli_faces_scale</code> and <code>cycles_visibility</code>. I checked all three with <code>hasattr</code> on a fresh cube:</p>
+
+  <pre><code>3.6.23   draw_type: False   dupli_faces_scale: False   cycles_visibility: False
+5.2.1    draw_type: False   dupli_faces_scale: False   cycles_visibility: False</code></pre>
+
+  <p>None of them exists on an object in any Blender I have installed. I checked <code>type</code> and <code>location</code> in the same pass and got True for both, so that isn&#x27;t <code>hasattr</code> returning False at me for some other reason.</p>
+
+  <p>The code works and the page lies. Someone reading that output to find out what an object has is being told about three attributes that were removed years ago, and no amount of running the snippet reveals it. That&#x27;s a harder thing to catch than an <code>AttributeError</code>, and I don&#x27;t have a good general answer for it beyond &quot;check the API docs for the version you&#x27;re on, not the sample output&quot;.</p>
+
+  <h3>What I&#x27;m not claiming</h3>
+
+  <p>Five pages out of 292 is a small sample and I picked them by view count, not randomly, from the subset whose top answer had runnable headless <code>bpy</code> in it. One in five failing is what I measured, not a rate you should extrapolate to the other 287. Anything that needs the interface to be up wasn&#x27;t testable this way at all, which quietly excludes a lot of add-on code.</p>
+
+  <p>I also got the check wrong the first time. To prove the probe could actually report a failure I planted a fault into one of the passing cases, and the attribute I planted still exists, so it passed 7/7 and proved nothing. Repointed at a name that cannot exist, the same three cases go 7/7 to 0/7, which is the only reason the four passes above are worth anything. A green result from an instrument you haven&#x27;t seen fail is not a result.</p>
+
+  <p>The useful version of all this is short. Old Blender answers are worth reading. Run them before you trust them, look at scene and context attributes first when something breaks, and don&#x27;t believe printed output just because the code underneath it still executes.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: four-of-five-twelve-year-old-blender-answers-still-run-on-5- -->
 
   <h2>Free add-ons</h2>
 
