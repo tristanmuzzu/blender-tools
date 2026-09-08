@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>29 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>30 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#gpu-init-a-crease-that-fails-quietly-and-where-split-normals">gpu.init(), a crease that fails quietly, and where split normals live</a></li>
     <li><a href="#four-of-five-twelve-year-old-blender-answers-still-run-on-5-">Four of five twelve-year-old Blender answers still run on 5.2.1</a></li>
     <li><a href="#blender-s-uv-sphere-hands-back-a-different-face-order-every-">Blender&#x27;s UV sphere hands back a different face order every time you add one</a></li>
     <li><a href="#what-replaced-bgl-glbindtexture-when-you-need-one-frame-of-a">What replaced <code>bgl.glBindTexture</code> when you need one frame of an image sequence</a></li>
@@ -2194,6 +2195,110 @@ print(vh.hexdigest()[:12], ph.hexdigest()[:12])</code></pre>
   </p>
 
 <!-- /section: four-of-five-twelve-year-old-blender-answers-still-run-on-5- -->
+
+  <!-- section: gpu-init-a-crease-that-fails-quietly-and-where-split-normals -->
+  <h2 id="gpu-init-a-crease-that-fails-quietly-and-where-split-normals">gpu.init(), a crease that fails quietly, and where split normals live</h2>
+
+  <p>I keep seven Blender builds on one machine because an add-on I sell has to run on all of them, and the only way I know whether it does is to run it. Answering questions on the forum turns out to be the cheapest way to find out what has quietly changed underneath. Three things came out of it in the first week of September 2026. All the numbers below were read off a run, not off the release notes.</p>
+
+  <h3>The gpu module works in background mode from 5.2</h3>
+
+  <p>If you have ever tried to test viewport drawing code in CI, you know the wall. Import <code>gpu</code> under <code>blender --background</code> on 4.5.13 and you get:</p>
+
+  <pre><code>SystemError: GPU functions for drawing are not available in background mode</code></pre>
+
+  <p>Same import on 5.2.1 says something else:</p>
+
+  <pre><code>SystemError: GPU functions for drawing requires the gpu module to be
+initialized. See gpu.init.</code></pre>
+
+  <p>That is a different sentence and it is an invitation. <code>hasattr(gpu, &quot;init&quot;)</code> reads False on 4.5.13 and on 5.0.1, and True on 5.2.0 and 5.2.1. Call it and you get a real context with no display server anywhere:</p>
+
+  <pre><code>gpu.platform.backend_type_get()  -&gt;  OPENGL
+gpu.platform.renderer_get()      -&gt;  llvmpipe (LLVM 21.1.8, 256 bits)
+gpu.platform.vendor_get()        -&gt;  Mesa</code></pre>
+
+  <p>Software rasteriser, so it won&#x27;t tell you anything about frame times. It will tell you whether your shader compiles, whether your batch builds, and whether your allocations behave.</p>
+
+  <p>I used it for exactly that. Somebody asked in November 2025 whether rebuilding a <code>GPUTexture</code> on every draw call leaks, and nobody had answered in nine months. So I measured it: 1024x1024 RGBA32F textures, 16 MiB of storage each, watching this process&#x27;s own <code>VmRSS</code>.</p>
+
+  <pre><code>400 allocated in a loop, newest kept    RSS +32.1 MB
+if none of them were freed              would be 6,400 MiB
+40 allocated and all references held    RSS +608.6 MB  (15.2 MB each)
+400 allocated and all references held    RSS +4,523.5 MB</code></pre>
+
+  <p>The middle line is the one that makes the first line mean anything. Without it, &quot;RSS barely moved&quot; could just as easily be a meter that can&#x27;t see a texture at all. It sees them. So a <code>GPUTexture</code> goes away when its last Python reference does, and the answer to that question is no, you&#x27;re fine.</p>
+
+  <p>The caveat is honest and worth stating: that&#x27;s llvmpipe and host memory. A discrete card would put the same allocation behind a driver, where <code>VmRSS</code> wouldn&#x27;t reach it.</p>
+
+  <h3>An edge crease that fails without saying so</h3>
+
+  <p><code>MeshEdge.crease</code> was removed in 4.0. On 4.2.23 through 5.2.1 the old loop raises <code>AttributeError</code>, which is loud and easy to fix. The replacement most scripts reach for is the generic attribute:</p>
+
+  <pre><code>layer = me.attributes.new(&quot;crease_edge&quot;, &#x27;FLOAT&#x27;, &#x27;EDGE&#x27;)
+for d in layer.data:
+    d.value = 1.0</code></pre>
+
+  <p>On 3.6.23 that raises nothing at all, and does nothing at all. The attribute gets created. It reads back as 1.0. The subdivision surface ignores it, because 3.6 keeps creases in their own layer and a generic float on the edge domain is just an unrelated float on the edge domain.</p>
+
+  <p>I checked it by effect rather than by return code, because a return code is exactly what was missing. A default cube with a level 2 Subsurf measures 1.6790 units across uncreased and 2.0000 across with every edge creased to 1.0, so the evaluated bounding box tells you whether the write landed:</p>
+
+  <pre><code>                                  3.6.23      4.2.23 - 5.2.1
+no crease (control)               1.6790      1.6790
+e.crease = 1.0                    2.0000      AttributeError
+attributes.new(&quot;crease_edge&quot;)     1.6790      2.0000
+me.edge_creases_ensure()          no attr     2.0000</code></pre>
+
+  <p>The 1.6790 in that third row is the problem. Nothing raises, nothing warns, and you get an uncreased mesh with no error to search for. If you need one branch that covers both eras, <code>edge_creases_ensure()</code> from 4.2 and <code>e.crease</code> on 3.6.</p>
+
+  <h3>Split normals live on the Mesh, and bmesh keeps loop order</h3>
+
+  <p>Someone spent last December trying to read split normals out of a bmesh, concluded it wasn&#x27;t possible, and worked around it by adding an Edge Split modifier before converting. That works and it changes the topology, which they said they could live with. They didn&#x27;t need to.</p>
+
+  <p>Three things, measured on a flat 2x2 grid with custom corner normals tilted 30 degrees off the face normal, so the planted values are ones no recomputation could invent:</p>
+
+  <pre><code>me.corner_normals              4.1+     returned all 16 planted values
+me.calc_normals_split()        3.6, 4.0 same, via me.loops[i].normal
+bmesh loop.calc_normal()       all 7    one value, (0, 0, -1)
+face normal                    all 7    (0, 0, 1)</code></pre>
+
+  <p>So the bmesh loop normal is geometric, it ignores the stored data, and it comes back with the sign flipped, which is the thing that makes it look almost right.</p>
+
+  <p>The useful part is the fourth measurement. <code>bm.from_mesh()</code> preserves loop order: bmesh loop <code>i</code> carried the same vertex as <code>me.loops[i]</code> on all seven builds. Read <code>corner_normals</code> into a list before you convert and index it by loop position, and the modifier isn&#x27;t needed.</p>
+
+  <h3>The control I got wrong</h3>
+
+  <p>Every one of those checks ships with a planted fault, because a green result from an instrument I haven&#x27;t broken on purpose isn&#x27;t evidence. The crease and split-normal probes go 7/7 clean and 0/7 with the fault in. The leak probe reads 32.1 MB clean and 4,523.5 MB with the leak planted.</p>
+
+  <p>The first fault I planted for the split-normal probe was &quot;make every corner normal equal the face normal&quot;, and the probe passed. It should have. The mesh route reports back whatever you stored, the bmesh route still disagrees with it, and loop order is still loop order, so all three assertions held on a case I had called broken. I had written a control that could not fail, which is the tenth time I&#x27;ve done that on this project. The version that works skips the write entirely, so there is nothing stored for the mesh route to find.</p>
+
+  <h3>What I&#x27;m not claiming</h3>
+
+  <p>The texture result is llvmpipe under <code>--background</code>, which is software and host memory. I did not test a discrete card and I can&#x27;t, on this box. The mechanism is the same refcount either way, but the meter isn&#x27;t, so treat that one as &quot;nothing leaks on the software backend&quot; and check yours if it matters.</p>
+
+  <p>The crease numbers are one primitive with one modifier at one level. I did not try creases under multires, under a Subdivision node, or on a mesh coming out of a boolean, and 1.6790 is specific to a default 2m cube at subdivision level 2. What transfers is the shape of the result, not the figure.</p>
+
+  <p>Everything here was run with <code>--background</code> and <code>--factory-startup</code>, so nothing that needs the interface was tested. Seven builds is not &quot;every Blender&quot;. I ran 3.6.23, 4.2.23, 4.5.12, 4.5.13, 5.0.1, 5.2.0 and 5.2.1, and where I say &quot;all seven&quot; I mean those and no others.</p>
+
+  <p>That failure mode is the whole reason I run seven builds instead of trusting one. Counts are not proof, and neither is a green tick from a test you have never seen go red.</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: gpu-init-a-crease-that-fails-quietly-and-where-split-normals -->
 
   <h2>Free add-ons</h2>
 
