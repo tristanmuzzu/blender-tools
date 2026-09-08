@@ -31,11 +31,12 @@ Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
 If you would rather take the lot in one file, all twelve are on Gumroad at
-$0, scripts and drag-and-drop zips together, no account needed beyond the
-email the download asks for:
+$0, scripts and drag-and-drop zips together:
 [all twelve in one zip](https://tristaneer2.gumroad.com/l/blender-tools?src=freetools-readme).
 It is the same twelve add-ons out of this repo, byte for byte, so use whichever
-is less trouble.
+is less trouble. It wants an email address, and it wants a 0 typed into the
+price box: Gumroad makes every free product a pay-what-you-want one and refuses
+to move with the box empty. Cloning this repo asks you for neither.
 
 The zip and the `.py` are the same add-on. The zip adds a manifest and the
 licence, and every one of them is installed, enabled, checked on disk and
