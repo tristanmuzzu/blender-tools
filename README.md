@@ -118,6 +118,11 @@ run on the same seven Blender versions as the twelve above.
 panels and greebles a hull procedurally. You get plating, vents and fins laid
 out over a mesh instead of modelling each one. $24, same seven Blender
 versions, same test suite.
+One catch, up front. There are no UVs on the plating, so textured panels mean
+unwrapping after you generate. And it plates over a surface rather than
+cutting into it, with plate size coming from the Min Panel setting in metres
+rather than from your topology, so a curved shape comes out as a lot of small
+plates however you built it.
 
 **[WearForge](https://tristaneer2.gumroad.com/l/wearforge?src=freetools-readme)**
 chips and chamfers the hard edges of a model you already have. The chamfer
