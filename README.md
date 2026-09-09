@@ -130,9 +130,10 @@ width changes along the edge, most of the edge is left crisp, and the bites go
 where a part actually gets handled rather than everywhere. It writes a `wear`
 point attribute so you can drive a mask off it. $14.
 Two catches, up front. It changes a close shot and it does not change a
-thumbnail, which is measured rather than a guess. And on 3.6 and 4.2 the same
-seed gives the same counts but not quite the same vertex positions, median
-1.24 mm on a 2 m part, because Blender's own bevel changed at 4.5.
+thumbnail, which is measured rather than a guess. And the `wear` attribute it
+writes stays inside Blender: FBX drops it, and glTF only carries custom
+attributes whose names begin with a `_`, so an export keeps the geometry and
+loses the mask.
 
 **[LineForge](https://tristaneer2.gumroad.com/l/lineforge?src=freetools-readme)**
 cuts panel seams into a model you already have. It finds the flat areas,
