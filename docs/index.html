@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>32 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>33 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1">FBX export is broken on Blender 5.0.1 and only on 5.0.1</a></li>
     <li><a href="#blender-s-exit-code-lied-to-me-three-different-ways-in-one-a">Blender&#x27;s exit code lied to me three different ways in one afternoon</a></li>
     <li><a href="#blender-throws-your-window-away-when-a-script-opens-a-file-a">Blender throws your window away when a script opens a file, and every check you would make says it did not</a></li>
     <li><a href="#gpu-init-a-crease-that-fails-quietly-and-where-split-normals">gpu.init(), a crease that fails quietly, and where split normals live</a></li>
@@ -2455,6 +2456,62 @@ print(&quot;OVERRIDE survived, is_editmode=&quot;, plane.data.is_editmode)</code
   </p>
 
 <!-- /section: blender-s-exit-code-lied-to-me-three-different-ways-in-one-a -->
+
+  <!-- section: fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1 -->
+  <h2 id="fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1">FBX export is broken on Blender 5.0.1 and only on 5.0.1</h2>
+
+  <p>Blender 5.0.1 cannot export FBX at all. Not &quot;sometimes&quot;, not &quot;with certain options&quot;. Every export raises, from Python and from the File menu, and the build either side of it is fine.</p>
+
+  <p>I ran the same eight-vertex cube through seven builds tonight. 3.6.23 writes 11,708 bytes. 4.2.23, 4.5.12, 4.5.13, 5.2.0 and 5.2.1 all write 11,836. 5.0.1 writes nothing and raises this:</p>
+
+  <pre><code>File &quot;/usr/lib/blender/scripts/addons_core/io_scene_fbx/__init__.py&quot;, line 606, in execute
+  if self.use_space_transform else Matrix())
+AttributeError: &#x27;ExportFBX&#x27; object has no attribute &#x27;use_space_transform&#x27;</code></pre>
+
+  <p>The exporter reads a property off its own operator that the operator does not declare. You can check it in one line, and it costs nothing to run before you start blaming your script:</p>
+
+  <pre><code>&#x27;use_space_transform&#x27; in bpy.ops.export_scene.fbx.get_rna_type().properties</code></pre>
+
+  <p>False on 5.0.1, True on the other six.</p>
+
+  <h3>Why this is worth ten minutes of somebody&#x27;s evening</h3>
+
+  <p>Because the error names your file. It arrives in the middle of an export you wrote, it mentions an attribute you have never heard of, and every instinct says the bug is yours. Mine did. I went looking through my own operator first, which is exactly the wrong place, because the file in the traceback is Blender&#x27;s own bundled add-on and the missing property is Blender&#x27;s too.</p>
+
+  <p>It is also the sort of thing that survives a search badly. The property is old, the operator is old, and every result you find will be somebody using it successfully on a version where it exists.</p>
+
+  <h3>The workaround, and the trap inside it</h3>
+
+  <p>The operator reads <code>self.use_space_transform</code>, so putting the attribute on the class makes the read succeed:</p>
+
+  <pre><code>bpy.types.EXPORT_SCENE_OT_fbx.use_space_transform = True
+bpy.ops.export_scene.fbx(filepath=&quot;/tmp/out.fbx&quot;)</code></pre>
+
+  <p>That exports. So does <code>False</code>, and this is the part I would rather you did not find the hard way.</p>
+
+  <p><code>use_space_transform</code> is what applies the axis conversion between Blender&#x27;s Z-up world and FBX&#x27;s Y-up one. Set it to <code>False</code> and the export succeeds, writes a plausible file, and quietly hands you a model lying on its side. A cube will not tell you, because a cube is symmetric and reimports identically either way.</p>
+
+  <p>So I used a cone, off-centre, three deep, and reimported all three files on 5.2.1:</p>
+
+  <pre><code>5.2.1, nothing patched      -0.500 -0.750 -1.500  to  1.500 1.250 1.500
+5.0.1, attribute set True   -0.500 -0.750 -1.500  to  1.500 1.250 1.500
+5.0.1, attribute set False  -0.500 -1.500 -0.750  to  1.500 1.500 1.250</code></pre>
+
+  <p>Same nine vertices and fourteen triangles in all three. The third one has Y and Z swapped. It is the failure mode I keep running into on this project: the thing that reports success and is wrong is more expensive than the thing that raises.</p>
+
+  <p>Set it to True.</p>
+
+  <h3>What I actually do</h3>
+
+  <p>Nothing, on the products. The round-trip check here exports glTF, which works on all seven, and when it meets 5.0.1 it reports SKIP with its own exit code rather than a pass. Calling a skipped export a pass claims coverage that never happened, and I would rather the matrix have a hole in it that says so.</p>
+
+  <p>If you need FBX specifically and you are on 5.0.1, the attribute above works and 5.2.x fixes it properly. If you are shipping something to other people, the version floor is worth stating out loud, because whoever is on 5.0.1 is going to hit this and assume it is you.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1 -->
 
   <h2>Free add-ons</h2>
 
