@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>31 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>32 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#blender-s-exit-code-lied-to-me-three-different-ways-in-one-a">Blender&#x27;s exit code lied to me three different ways in one afternoon</a></li>
     <li><a href="#blender-throws-your-window-away-when-a-script-opens-a-file-a">Blender throws your window away when a script opens a file, and every check you would make says it did not</a></li>
     <li><a href="#gpu-init-a-crease-that-fails-quietly-and-where-split-normals">gpu.init(), a crease that fails quietly, and where split normals live</a></li>
     <li><a href="#four-of-five-twelve-year-old-blender-answers-still-run-on-5-">Four of five twelve-year-old Blender answers still run on 5.2.1</a></li>
@@ -2370,6 +2371,90 @@ PROBE ctx_object MISSING</code></pre>
   </p>
 
 <!-- /section: blender-throws-your-window-away-when-a-script-opens-a-file-a -->
+
+  <!-- section: blender-s-exit-code-lied-to-me-three-different-ways-in-one-a -->
+  <h2 id="blender-s-exit-code-lied-to-me-three-different-ways-in-one-a">Blender&#x27;s exit code lied to me three different ways in one afternoon</h2>
+
+  <p>I keep seven builds of Blender on one machine, 3.6.23 through 5.2.1, and run everything against all seven before it ships. The reason is that the bugs which cost me a day usually only show up on one build. What I hadn&#x27;t worked out before 9 September is how little the exit code tells you about which build that was.</p>
+
+  <p>Three separate things bit me while chasing a forum question. All three were measured on the same machine on 9 September 2026, and each one is a case where <code>$?</code> says something that isn&#x27;t true.</p>
+
+  <h3>One: under <code>-b</code>, a script that dies still exits 0</h3>
+
+  <p>This is known and it&#x27;s still the one that gets me. Blender returns 0 when a <code>--python</code> script raises an unhandled exception. Here&#x27;s the whole test. Save a plane from 5.2.1, then try to open that file on every build:</p>
+
+  <pre><code>import sys, bpy
+p = sys.argv[sys.argv.index(&quot;--&quot;) + 1]
+bpy.ops.wm.open_mainfile(filepath=p)
+print(&quot;OPENED ok, objects:&quot;, len(bpy.data.objects), flush=True)</code></pre>
+
+  <p>Run it as <code>blender -b --factory-startup --python open_it.py -- tpl-5.2.1.blend</code> and you get this:</p>
+
+  <pre><code>3.6.23  rc=0  REFUSES
+4.2.23  rc=0  REFUSES
+4.5.12  rc=0  opens
+4.5.13  rc=0  opens
+5.0.1   rc=0  opens
+5.2.0   rc=0  opens
+5.2.1   rc=0  opens</code></pre>
+
+  <p>Two of the seven never loaded the file. All seven returned 0. The refusal is real and it&#x27;s printed, <code>RuntimeError: Error: Loading &quot;tpl-5.2.1.blend&quot; failed: Failed to read blend file, not a blend file</code>, but if your CI reads the return code and not the log, you have a green build over a Blender that did nothing.</p>
+
+  <p>The other half of that table is worth keeping on its own. <code>.blend</code> is forward compatible and not backward compatible, and the boundary here sits between 4.2 and 4.5: a file saved by 5.2.1 opens on 4.5.12 and up and is refused by 4.2.23 and 3.6.23. If you build a test fixture once and feed it to a version matrix, build it with the oldest binary in the matrix. I did it the other way round and spent an hour reading a stack trace that had nothing to do with what I was testing.</p>
+
+  <h3>Two: in the foreground, everything exits 124</h3>
+
+  <p>Drop the <code>-b</code> and the exit code stops meaning anything at all, because Blender doesn&#x27;t quit when your script finishes. It opens the UI loop and sits there. So you wrap it in <code>timeout</code> and every run comes back 124, whatever happened:</p>
+
+  <pre><code>3.6.23 foreground, file it cannot read:  rc=124, 45s
+3.6.23 foreground, file it can read:     rc=124, 45s
+4.5.13 foreground, file it can read:     rc=124, 45s</code></pre>
+
+  <p>Same code, same number, and one of those three runs failed. The middle and bottom rows printed <code>OPENED ok, objects: 1</code> and the top one printed the RuntimeError. Nothing in the exit status separates them.</p>
+
+  <p>I nearly filed the first row as a hang. It isn&#x27;t a hang. It&#x27;s Blender doing exactly what it&#x27;s supposed to do, which is stay open, and my test runner reading the one number that couldn&#x27;t tell me so. Call <code>bpy.ops.wm.quit_blender()</code> at the end of the script, or pass <code>--python-exit-code</code>, and grep the log for a line you printed yourself.</p>
+
+  <h3>Three: 139 twice, for two completely different reasons</h3>
+
+  <p>Here&#x27;s the one I liked. The forum question was about <code>mode_set</code> failing in the foreground, and one of the two fixes people reach for is <code>temp_override</code>. In this state, where the script called <code>open_mainfile</code> itself, <code>context.window</code> and <code>context.screen</code> are both <code>None</code>. So:</p>
+
+  <pre><code>with bpy.context.temp_override(object=plane, active_object=plane,
+                               selected_objects=[plane],
+                               selected_editable_objects=[plane]):
+    bpy.ops.object.mode_set(mode=&quot;EDIT&quot;)
+print(&quot;OVERRIDE survived, is_editmode=&quot;, plane.data.is_editmode)</code></pre>
+
+  <p>Across seven builds, under <code>xvfb-run</code>:</p>
+
+  <pre><code>3.6.23  rc=139   last line printed: ABOUT TO temp_override
+4.2.23  rc=139   OVERRIDE survived, is_editmode= True
+4.5.12  rc=139   OVERRIDE survived, is_editmode= True
+4.5.13  rc=139   OVERRIDE survived, is_editmode= True
+5.0.1   rc=139   OVERRIDE survived, is_editmode= True
+5.2.0   rc=0     OVERRIDE survived, is_editmode= True
+5.2.1   rc=0     OVERRIDE survived, is_editmode= True</code></pre>
+
+  <p>Five builds report the same 139 and only one of them failed. On 3.6.23 the process dies inside the override and never reaches edit mode. On 4.2.23 through 5.0.1 it enters edit mode, confirms it with <code>data.is_editmode</code>, and then segfaults on the way out.</p>
+
+  <p>I checked that rather than assuming it, because &quot;the override crashes it&quot; was the obvious reading and it&#x27;s wrong. Same script with the whole <code>temp_override</code> block deleted:</p>
+
+  <pre><code>4.2.23 without any temp_override: rc=139
+4.5.13 without any temp_override: rc=139
+5.2.1  without any temp_override: rc=0</code></pre>
+
+  <p>So the crash on those builds is <code>quit_blender()</code> in a window-less foreground session, and it has nothing to do with the override. 3.6.23&#x27;s is real, it&#x27;s a segfault, and you can&#x27;t catch a segfault with <code>try</code>. If you&#x27;re supporting 3.6, don&#x27;t reach for <code>temp_override</code> in a script that opened its own file. Put the <code>.blend</code> on the command line instead and the whole problem goes away, because the window is never thrown out in the first place.</p>
+
+  <h3>What I actually changed</h3>
+
+  <p>Nothing in the product. All of our own scripts run under <code>-b</code>, so none of them can reach this state. What changed is the test runner: every probe here now prints a <code>RESULT</code> line and the runner reads that line, not <code>$?</code>, and every fixture is saved by the binary that&#x27;s about to read it.</p>
+
+  <p>The general version, and it&#x27;s cost me twice now: a check you haven&#x27;t seen fail isn&#x27;t a check. Feed it something broken and watch it say so before you trust a green from it.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-s-exit-code-lied-to-me-three-different-ways-in-one-a -->
 
   <h2>Free add-ons</h2>
 
