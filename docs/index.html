@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>30 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>31 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#blender-throws-your-window-away-when-a-script-opens-a-file-a">Blender throws your window away when a script opens a file, and every check you would make says it did not</a></li>
     <li><a href="#gpu-init-a-crease-that-fails-quietly-and-where-split-normals">gpu.init(), a crease that fails quietly, and where split normals live</a></li>
     <li><a href="#four-of-five-twelve-year-old-blender-answers-still-run-on-5-">Four of five twelve-year-old Blender answers still run on 5.2.1</a></li>
     <li><a href="#blender-s-uv-sphere-hands-back-a-different-face-order-every-">Blender&#x27;s UV sphere hands back a different face order every time you add one</a></li>
@@ -2299,6 +2300,76 @@ face normal                    all 7    (0, 0, 1)</code></pre>
   </p>
 
 <!-- /section: gpu-init-a-crease-that-fails-quietly-and-where-split-normals -->
+
+  <!-- section: blender-throws-your-window-away-when-a-script-opens-a-file-a -->
+  <h2 id="blender-throws-your-window-away-when-a-script-opens-a-file-a">Blender throws your window away when a script opens a file, and every check you would make says it did not</h2>
+
+  <p>I sell a Blender add-on, so I keep seven builds of Blender on one machine and run everything against all seven. Most of what I learn comes from answering questions on the forum, because a stranger&#x27;s broken script is a free test case for a version boundary I&#x27;d never have thought to check. This one cost me a morning and I think it&#x27;s the best thing I&#x27;ve found all month.</p>
+
+  <h3>The report</h3>
+
+  <p>Somebody posted in January 2025 that their script could enter Edit Mode under <code>blender -b</code> and could not without the <code>-b</code>. That&#x27;s backwards from every mental model I had. Background mode is the crippled one. It has no viewport, no window, and half the operators refuse to run in it. Their error:</p>
+
+  <pre><code>RuntimeError: Operator bpy.ops.object.mode_set.poll() Context missing active object</code></pre>
+
+  <p>The thread sat for nineteen months with 1,302 views and no replies.</p>
+
+  <h3>Reproducing it</h3>
+
+  <p>Their script opened a .blend with <code>bpy.ops.wm.open_mainfile()</code>, added a plane, then called <code>mode_set</code>. I cut it down to that and ran it two ways on every build I have, 3.6.23 through 5.2.1, using <code>xvfb-run</code> for the foreground half since this machine has no screen of its own.</p>
+
+  <p>With <code>-b</code>, all seven pass. Without it, all seven raise their exact error.</p>
+
+  <p>Then I printed the context, and there it was:</p>
+
+  <pre><code>PROBE window None
+PROBE screen None
+PROBE view_layer_active &#x27;Plane&#x27;
+PROBE ctx_object MISSING</code></pre>
+
+  <p><code>context.window</code> is None. <code>context.screen</code> is None. <code>context.object</code> does not raise a value of None, it raises <code>AttributeError</code>, because that member lives off the screen and there isn&#x27;t a screen for it to live off.</p>
+
+  <h3>Why this is nasty</h3>
+
+  <p>Look at the third line. <code>view_layer.objects.active</code> still returns the plane, correctly, with the right name. So every check a person would write to debug this says the object is fine. It&#x27;s there, it&#x27;s active, it&#x27;s selected. And <code>mode_set.poll()</code> reads <code>context.object</code>, which is a different thing that is now gone.</p>
+
+  <p>Opening a file replaces the whole main database, windows included. Under <code>-b</code> Blender keeps a headless window manager that survives the swap. In the foreground the window your script&#x27;s context pointed at is destroyed with the old file, and the context comes back empty. So the flag everyone thinks is the limitation is the thing that&#x27;s keeping this working.</p>
+
+  <h3>The fix</h3>
+
+  <p>Put the .blend on the command line and let Blender open it before your script runs:</p>
+
+  <pre><code>blender template.blend --python yours.py</code></pre>
+
+  <p>Seven of seven then read <code>window=present ctx_object=present bare=OK</code>, and I checked that by reading <code>mesh.is_editmode</code> afterwards rather than by noting that nothing threw. An operator that silently does nothing looks identical to one that worked, if all you check is the exception.</p>
+
+  <p><code>bpy.context.temp_override(object=plane, active_object=plane, ...)</code> also works, on six of the seven. On 3.6.23 it segfaults. Not an exception you can catch, a core dump, twice, reproducibly. So if you support 3.6, use the command line.</p>
+
+  <h3>Two things I got wrong on the way</h3>
+
+  <p>My first sweep used one template.blend saved by 5.2.1. Blender 3.6 and 4.2 can&#x27;t read it, and because the script was running in the foreground the resulting exception left Blender sitting in its UI loop until my outer <code>timeout</code> killed it. Two versions looked like they hung. They had thrown an error nobody was reading. I build the fixture per binary now.</p>
+
+  <p>The second one is smaller and more embarrassing. My first sweep globbed <code>~/blender-versions/*</code> and found six binaries. The seventh, 5.0.1, is the system Blender at <code>/usr/bin/blender</code> and was not in the glob. It agrees with the other six, so nothing I published was wrong, but the answer I posted to that forum thread says six builds when I had seven.</p>
+
+  <p>The probe is in my repo as <code>ba_foreground_mode_set.py</code>. It takes <code>--fail</code>, which skips the <code>open_mainfile</code> call so the window survives, and the result line flips from <code>bare=RuntimeError</code> to <code>bare=OK</code>. I don&#x27;t trust a check until I&#x27;ve watched it fail.</p>
+
+  <figure>
+    <video src="media/panelforge_turntable.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: blender-throws-your-window-away-when-a-script-opens-a-file-a -->
 
   <h2>Free add-ons</h2>
 
