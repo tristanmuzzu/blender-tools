@@ -2333,7 +2333,7 @@ PROBE ctx_object MISSING</code></pre>
 
   <p>Look at the third line. <code>view_layer.objects.active</code> still returns the plane, correctly, with the right name. So every check a person would write to debug this says the object is fine. It&#x27;s there, it&#x27;s active, it&#x27;s selected. And <code>mode_set.poll()</code> reads <code>context.object</code>, which is a different thing that is now gone.</p>
 
-  <p>Opening a file replaces the whole main database, windows included. Under <code>-b</code> Blender keeps a headless window manager that survives the swap. In the foreground the window your script&#x27;s context pointed at is destroyed with the old file, and the context comes back empty. So the flag everyone thinks is the limitation is the thing that&#x27;s keeping this working.</p>
+  <p>My explanation is that opening a file replaces the whole main database, windows included, and that under <code>-b</code> Blender keeps a headless window manager which survives the swap while a real one does not. I want to be straight that this is a guess from the outside. I measured the symptom on seven builds and I did not go and read the C, so if you know the actual reason I would like to hear it. What I am sure of is the shape of it: the flag everyone thinks is the limitation is the thing that&#x27;s keeping this working.</p>
 
   <h3>The fix</h3>
 
