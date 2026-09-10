@@ -1,7 +1,7 @@
 # Blender Tools
 
-Twelve small Blender add-ons for hard-surface and game asset work. MIT, one
-`.py` file each, no dependencies.
+Twelve small Blender add-ons for hard-surface and game asset work. GPL-3.0-or-later
+or MIT, your pick, one `.py` file each, no dependencies.
 
 **Site:** https://tristanmuzzu.github.io/blender-tools/
 
@@ -30,13 +30,17 @@ Blender's own file filter for it is `*.zip;*.py`.
 Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
-If you would rather take the lot in one file, all twelve are on Gumroad at
-$0, scripts and drag-and-drop zips together:
-[all twelve in one zip](https://tristaneer2.gumroad.com/l/blender-tools?src=freetools-readme).
-It is the same twelve add-ons out of this repo, byte for byte, so use whichever
-is less trouble. It wants an email address, and it wants a 0 typed into the
-price box: Gumroad makes every free product a pay-what-you-want one and refuses
-to move with the box empty. Cloning this repo asks you for neither.
+If you would rather take the lot in one file, the
+[v1.0.0 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.0.0)
+has `blender-tools.zip`: scripts and drag-and-drop zips together, 150,702
+bytes, and it asks you for nothing.
+
+The same bundle is also on Gumroad at $0,
+[here](https://tristaneer2.gumroad.com/l/blender-tools?src=freetools-readme),
+byte for byte the same file. That one wants an email address, and it wants a 0
+typed into the price box, because Gumroad makes every free product a
+pay-what-you-want one and refuses to move with the box empty. The release
+above is less trouble.
 
 The zip and the `.py` are the same add-on. The zip adds a manifest and the
 licence, and every one of them is installed, enabled, checked on disk and
@@ -164,4 +168,10 @@ exactly the same.
 
 ## Licence
 
-MIT. Do what you like with them.
+Dual, GPL-3.0-or-later or MIT, whichever suits you. [`LICENSE`](LICENSE) is
+the MIT text and [`LICENSE-GPL-3.0`](LICENSE-GPL-3.0) is the GPL one,
+verbatim from gnu.org. Every extension manifest in [`dist/`](dist/) names both
+SPDX ids and the v1.0.0 zip carries both texts. GitHub's sidebar picks one
+file and says MIT, which is true and is half of it.
+
+Do what you like with them.
