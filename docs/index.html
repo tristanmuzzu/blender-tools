@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>33 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>34 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#your-script-asked-blender-for-cycles-and-got-eevee-on-all-se">Your script asked Blender for Cycles and got EEVEE, on all seven builds I have</a></li>
     <li><a href="#fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1">FBX export is broken on Blender 5.0.1 and only on 5.0.1</a></li>
     <li><a href="#blender-s-exit-code-lied-to-me-three-different-ways-in-one-a">Blender&#x27;s exit code lied to me three different ways in one afternoon</a></li>
     <li><a href="#blender-throws-your-window-away-when-a-script-opens-a-file-a">Blender throws your window away when a script opens a file, and every check you would make says it did not</a></li>
@@ -2512,6 +2513,80 @@ bpy.ops.export_scene.fbx(filepath=&quot;/tmp/out.fbx&quot;)</code></pre>
   </p>
 
 <!-- /section: fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1 -->
+
+  <!-- section: your-script-asked-blender-for-cycles-and-got-eevee-on-all-se -->
+  <h2 id="your-script-asked-blender-for-cycles-and-got-eevee-on-all-se">Your script asked Blender for Cycles and got EEVEE, on all seven builds I have</h2>
+
+  <p>Every render I asked Cycles for came back from EEVEE instead, and nothing anywhere said so. The line doing the asking looked like this:</p>
+
+  <pre><code>available = [i.identifier for i in
+             bpy.types.RenderSettings.bl_rna.properties[&quot;engine&quot;].enum_items]
+if &quot;CYCLES&quot; in available:
+    scene.render.engine = &quot;CYCLES&quot;</code></pre>
+
+  <p>That reads like defensive code. Ask the enum what engines exist, use Cycles if it&#x27;s there, fall back if it isn&#x27;t. It&#x27;s wrong on every Blender I have, and it fails silently, which is the part that cost me the day.</p>
+
+  <p>Here&#x27;s the enum on seven builds, printed under <code>--factory-startup</code>:</p>
+
+  <pre><code>3.6.23    [&#x27;BLENDER_EEVEE&#x27;]
+4.2.23    [&#x27;BLENDER_EEVEE_NEXT&#x27;]
+4.5.12    [&#x27;BLENDER_EEVEE_NEXT&#x27;]
+4.5.13    [&#x27;BLENDER_EEVEE_NEXT&#x27;]
+5.0.1     [&#x27;BLENDER_EEVEE&#x27;]
+5.2.0     [&#x27;BLENDER_EEVEE&#x27;]
+5.2.1     [&#x27;BLENDER_EEVEE&#x27;]</code></pre>
+
+  <p>One entry. Not Cycles, not Workbench. The property holds Blender&#x27;s internal engines, and Cycles ships as an add-on, so it is never in that list even when it is enabled, loaded, and perfectly able to render. <code>&quot;CYCLES&quot; in available</code> was False 7 times out of 7.</p>
+
+  <p>The cruel bit is that the assignment works. <code>scene.render.engine = &quot;CYCLES&quot;</code> succeeds on all seven, reads back as <code>CYCLES</code>, and renders with Cycles. Only the question is broken. So a script that asks first is worse off than a script that just sets the thing and lets it raise.</p>
+
+  <h3>What it actually cost</h3>
+
+  <p>I had a product shot with a floor under the model and no shadow on the floor. Three area lamps, key and fill and rim, and a plane the model was standing on. The shadow wasn&#x27;t there. I spent six renders moving lamps, cutting the fill, raising the key, and every version came back with a floor that was lit but empty, which looks worse than no floor at all, because it says the object is somewhere and then won&#x27;t say where.</p>
+
+  <p>It was EEVEE the whole time. Three soft area shadows from three directions in EEVEE land on top of each other and cancel out into an even wash. In Cycles, with nothing else changed and the same three lamps, the same frame darkens 228,538 pixels below the model by a mean of 0.176 out of 1.0. That&#x27;s the shadow, and it arrived the moment the engine string took effect.</p>
+
+  <p>The other tell was speed. Software EEVEE was giving me 53 seconds a frame at 1080px on 16 cores, which I&#x27;d written off as &quot;this box has no GPU&quot;. A 64 pixel Cycles frame on the same box renders in 0.38 seconds.</p>
+
+  <h3>The check that works</h3>
+
+  <p>Ask the add-on system, since that&#x27;s the thing that decides it:</p>
+
+  <pre><code>import addon_utils
+
+has_cycles = hasattr(scene, &quot;cycles&quot;) and any(
+    m.__name__ == &quot;cycles&quot; and addon_utils.check(&quot;cycles&quot;)[1]
+    for m in addon_utils.modules())</code></pre>
+
+  <p>True on all seven. Both halves matter: <code>addon_utils.check()</code> returns <code>(default_enabled, currently_loaded)</code> and you want the second one, and <code>scene.cycles</code> is what tells you the RNA is actually attached to this scene.</p>
+
+  <h3>Two neighbours in the same family</h3>
+
+  <p>Same failure shape, found the same week, both worth a minute of your time.</p>
+
+  <p><code>scene.cycles.use_denoising = True</code> sets fine and can do nothing. Denoising needs a denoiser, and some builds ship Cycles with an empty enum: <code>[i.identifier for i in c.bl_rna.properties[&quot;denoiser&quot;].enum_items]</code> gives <code>[]</code> on this one. No error. Every render I have made on this machine has been raw sampled output while a flag said otherwise.</p>
+
+  <p>The compositor&#x27;s Denoise node is not a way around that. I tried it tonight, because 96 frames at 1080px and 128 samples measures 175 seconds a frame on this box, which is four and a half hours, and 32 samples plus a denoise would have been about one. The node exists, links, and evaluates. The same 480px 32-sample frame rendered with it and without it came out byte identical, maximum absolute difference 0 across 480x480x3, with 30.2% of pixels off their local neighbourhood by more than 4/255 in both. It costs 7.6 seconds a frame to change nothing.</p>
+
+  <p>And if you go looking for that node on 5.0, note that the compositor moved. There&#x27;s no <code>scene.node_tree</code> and no <code>CompositorNodeComposite</code> at all any more. It&#x27;s a node group on <code>scene.compositing_node_group</code>. My first attempt wired <code>NodeGroupInput</code> into the chain where the render layer should have gone, and Blender rendered a black 480x480 frame in 1.1 seconds and exited 0. Cycles was never asked for anything. Nothing in the log said so, and the only reason I caught it is that I open every frame before I trust it.</p>
+
+  <h3>What I can&#x27;t tell you</h3>
+
+  <p>I don&#x27;t know when the engine enum stopped listing add-on engines, or whether it ever did. 3.6.23 is the oldest build I keep, and it already behaves this way, so this is at least three years old and probably older. I also don&#x27;t know whether it&#x27;s considered a bug. It might be entirely deliberate, in which case the fix is documentation and not code.</p>
+
+  <p>Every number above came off this machine tonight or last night. The engine probe is one short script run seven times under <code>--factory-startup</code>, so it&#x27;s cheap to disagree with me.</p>
+
+  <p>I found all of this while re-rendering the demo clips for PanelForge, which is a hull plating generator I sell. The plating is the product. The lighting forensics were not, and I&#x27;d rather you skipped them.</p>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $24</a>
+  </p>
+
+<!-- /section: your-script-asked-blender-for-cycles-and-got-eevee-on-all-se -->
 
   <h2>Free add-ons</h2>
 
