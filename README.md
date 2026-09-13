@@ -31,8 +31,8 @@ Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
 If you would rather take the lot in one file, the
-[v1.1.1 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.1.1)
-has `blender-tools.zip`: scripts and drag-and-drop zips together, 154,426
+[v1.2.0 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.2.0)
+has `blender-tools.zip`: scripts and drag-and-drop zips together, 158,984
 bytes, and it asks you for nothing.
 
 The same bundle is also on Gumroad at $0,
@@ -52,7 +52,7 @@ uninstalled again on all seven Blender versions before it goes out.
 |---|---|
 | [Asset Check](addons/bt_asset_check.py) | Checks transforms, scale, manifold geometry and UVs before export, and fixes the mechanical stuff. The UV test measures the area of every face in the map, so a wall whose UVs collapsed onto a line gets caught. Also catches a rotated object under a non-uniformly scaled parent, which exports wrong and looks right in Blender |
 | [Surface Scatter](addons/bt_surface_scatter.py) | Scatters instances over a surface, weighted by face area, with a slope limit |
-| [Quick Export](addons/bt_quick_export.py) | glTF or FBX with Unity and Unreal axes already right |
+| [Quick Export](addons/bt_quick_export.py) | glTF or FBX with Unity and Unreal axes already right. Blender 5.0.1 ships an FBX exporter with 4 settable options instead of 42 and cannot export a selection at all, so on that one build the FBX button says so and writes nothing rather than throwing a traceback. glTF works on all seven |
 | [Mesh Stats](addons/bt_mesh_stats.py) | Live triangle, n-gon, loose vertex and manifold counts |
 | [Auto Frame](addons/bt_auto_frame.py) | Puts the camera where your selection fills the frame |
 | [Seam by Angle](addons/bt_seam_by_angle.py) | Marks seams on sharp edges, then unwraps |
