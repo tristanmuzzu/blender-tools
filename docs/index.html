@@ -383,8 +383,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>34 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>35 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab">A UV layer being there is not the same as the UVs being usable</a></li>
     <li><a href="#your-script-asked-blender-for-cycles-and-got-eevee-on-all-se">Your script asked Blender for Cycles and got EEVEE, on all seven builds I have</a></li>
     <li><a href="#fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1">FBX export is broken on Blender 5.0.1 and only on 5.0.1</a></li>
     <li><a href="#blender-s-exit-code-lied-to-me-three-different-ways-in-one-a">Blender&#x27;s exit code lied to me three different ways in one afternoon</a></li>
@@ -2587,6 +2588,69 @@ has_cycles = hasattr(scene, &quot;cycles&quot;) and any(
   </p>
 
 <!-- /section: your-script-asked-blender-for-cycles-and-got-eevee-on-all-se -->
+
+  <!-- section: a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab -->
+  <h2 id="a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab">A UV layer being there is not the same as the UVs being usable</h2>
+
+  <p>144 of 236 faces on this mesh have a UV layer and no UV area, and every validator I own said it was fine.</p>
+
+  <p>The mesh is a 2m cube with panel lines cut into it by a generator I wrote. The cut insets a face by zero thickness, sinks the inner ring, and the wall between the two rings is a quad. That quad is what carries the groove&#x27;s side, and it is where a tiling texture smears one column of pixels down the whole length of every line in the model.</p>
+
+  <p>Here&#x27;s why. <code>bmesh.ops.inset_region</code> with <code>thickness=0.0</code> puts the new ring of vertices exactly where the old ring is, and the UV coordinate for a new vertex is interpolated from where it lands. Land it on top of the original and you get the original&#x27;s UV. Both rings of the wall now carry the same coordinates, so the quad occupies a line segment in the map rather than a rectangle. It has area in the world and none in the texture.</p>
+
+  <p>Same seed twice, with the wall pass stubbed out and with it in:</p>
+
+  <figure>
+    <img src="media/lineforge_collapsed_uvs.png" alt="The UV map of a 2m cube at seed 3. Left, before: 144 of 236 faces are the red line segments, quads with real geometry and no area in the map. Right, after: the same faces are strips. 362 verts and 236 faces either way, compared rather than assumed.">
+    <figcaption>The UV map of a 2m cube at seed 3. Left, before: 144 of 236 faces are the red line segments, quads with real geometry and no area in the map. Right, after: the same faces are strips. 362 verts and 236 faces either way, compared rather than assumed.</figcaption>
+  </figure>
+
+  <p>Nothing caught it, and the reason is worth more than the bug. Every UV check I had asked the same question:</p>
+
+  <pre><code>if not mesh.uv_layers:
+    problem(&quot;No UV layer&quot;)</code></pre>
+
+  <p>The layer is there. It has always been there. <code>inset_region</code> did not delete anything, it produced coordinates that happen to be useless, and &quot;is there a map&quot; cannot tell a useless map from a good one. Blender&#x27;s own 3D Print Toolbox does not check this either, and neither does the glTF exporter, which will happily write the whole thing out.</p>
+
+  <h3>What to ask instead</h3>
+
+  <p>Shoelace over each face&#x27;s UV loops. It handles n-gons, and the sign does not matter because you throw it away:</p>
+
+  <pre><code>import bmesh
+
+def collapsed_faces(mesh):
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    uv = bm.loops.layers.uv.active
+    bad = []
+    for f in bm.faces:
+        if f.calc_area() &lt;= 1e-9:
+            continue
+        pts = [loop[uv].uv for loop in f.loops]
+        a = 0.0
+        for i in range(len(pts)):
+            j = (i + 1) % len(pts)
+            a += pts[i].x * pts[j].y - pts[j].x * pts[i].y
+        if abs(a) / 2.0 &lt;= 1e-12:
+            bad.append(f.index)
+    bm.free()
+    return bad</code></pre>
+
+  <p>The geometry-area skip matters. A face with no area of its own has nothing useful to say about its UVs and will just fill your report with noise.</p>
+
+  <h3>The part I got wrong twice</h3>
+
+  <p>My first fix reported &quot;0 walls fixed&quot; and I nearly believed it, because <code>bmesh.ops.inset_region</code> returns the <em>walls</em> in <code>faces</code>, not the inset region, and I had read it the other way round. Printing the count next to the geometry found it in about a minute. Reading the docs again did not.</p>
+
+  <p>Then I checked whether the picture proved anything. It nearly did not: at any camera angle that also shows the object, those walls are close to edge-on, and the smear came to 416 pixels, or 0.051% of the frame. That&#x27;s why the image above is the UV map and not a render. The map is where this defect is legible, and a render of it is a thing you can talk yourself into seeing.</p>
+
+  <p>I also went looking at the other three generators here with the same question, rather than assuming. One had 144 collapsed faces, one had 1,752 faces and none, and one had 1,446 and none, because its geometry comes off bmesh ops that interpolate the map properly. So this is a property of how you cut, not something that happens to meshes in general.</p>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/blender-tools?src=portfolio">Get the twelve free add-ons, $0</a>
+  </p>
+
+<!-- /section: a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab -->
 
   <h2>Free add-ons</h2>
 
