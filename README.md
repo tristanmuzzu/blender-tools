@@ -31,8 +31,8 @@ Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
 If you would rather take the lot in one file, the
-[v1.0.0 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.0.0)
-has `blender-tools.zip`: scripts and drag-and-drop zips together, 150,702
+[v1.1.0 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.1.0)
+has `blender-tools.zip`: scripts and drag-and-drop zips together, 153,878
 bytes, and it asks you for nothing.
 
 The same bundle is also on Gumroad at $0,
@@ -50,7 +50,7 @@ uninstalled again on all seven Blender versions before it goes out.
 
 | Add-on | What it does |
 |---|---|
-| [Asset Check](addons/bt_asset_check.py) | Checks transforms, scale, manifold geometry and UVs before export, and fixes the mechanical stuff. Also catches a rotated object under a non-uniformly scaled parent, which exports wrong and looks right in Blender |
+| [Asset Check](addons/bt_asset_check.py) | Checks transforms, scale, manifold geometry and UVs before export, and fixes the mechanical stuff. The UV test measures the area of every face in the map, so a wall whose UVs collapsed onto a line gets caught. Also catches a rotated object under a non-uniformly scaled parent, which exports wrong and looks right in Blender |
 | [Surface Scatter](addons/bt_surface_scatter.py) | Scatters instances over a surface, weighted by face area, with a slope limit |
 | [Quick Export](addons/bt_quick_export.py) | glTF or FBX with Unity and Unreal axes already right |
 | [Mesh Stats](addons/bt_mesh_stats.py) | Live triangle, n-gon, loose vertex and manifold counts |

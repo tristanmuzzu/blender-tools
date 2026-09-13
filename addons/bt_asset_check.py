@@ -1,10 +1,10 @@
 bl_info = {
     "name": "BT Asset Check",
     "author": "Tristan Muzzu",
-    "version": (1, 1, 0),
+    "version": (1, 2, 0),
     "blender": (3, 6, 0),
     "location": "View3D > Sidebar > BTools",
-    "description": "Pre-export checks: transforms, scale, manifold geometry, UVs",
+    "description": "Pre-export checks: transforms, scale, manifold geometry, collapsed UVs",
     "category": "Object",
 }
 
@@ -94,6 +94,49 @@ def _parent_shear(obj):
     return parent.name
 
 
+# A UV triangle this small is a rounding artefact, not a mapping. The number is
+# the one `products/lineforge/tests/uv_check.py` uses, where the defect this
+# catches was first measured.
+_UV_AREA_TOL = 1e-12
+# Below this a face has no meaningful geometry either, so a zero-area UV on it
+# tells you nothing and would only produce noise on degenerate junk.
+_FACE_AREA_TOL = 1e-9
+
+
+def _collapsed_uv_faces(bm):
+    """Faces carrying real geometry that occupy no area in the UV map.
+
+    The whole UV test here used to be `if not mesh.uv_layers`, and a layer
+    being present is not the same as the layer being usable. `inset_region`
+    with `thickness=0.0` hands both vertex rings of a wall the same
+    interpolated coordinate, so the quad becomes a line segment in UV space
+    and a tiling texture smears one column of pixels down its length. LineForge
+    shipped that until 0.4.0: **144 of 236 faces on a 2 m cube at seed 3**, each
+    with 0.0035 m2 of geometry behind it, and this add-on looked at that mesh
+    and reported two INFO rows about n-gons and Z height.
+
+    Shoelace over each face's UV loops, which handles n-gons and does not care
+    about winding because the sign is thrown away. Returns face indices, so the
+    panel can name somewhere to go and look rather than just a count.
+    """
+    uv = bm.loops.layers.uv.active
+    if uv is None:
+        return []
+    bm.faces.ensure_lookup_table()
+    bad = []
+    for f in bm.faces:
+        if f.calc_area() <= _FACE_AREA_TOL:
+            continue
+        pts = [loop[uv].uv for loop in f.loops]
+        a = 0.0
+        for i in range(len(pts)):
+            j = (i + 1) % len(pts)
+            a += pts[i].x * pts[j].y - pts[j].x * pts[i].y
+        if abs(a) / 2.0 <= _UV_AREA_TOL:
+            bad.append(f.index)
+    return bad
+
+
 def _check(obj):
     issues = []
 
@@ -130,6 +173,7 @@ def _check(obj):
     loose = sum(1 for v in bm.verts if not v.link_edges)
     interior = sum(1 for e in bm.edges if len(e.link_faces) > 2)
     ngons = sum(1 for f in bm.faces if len(f.verts) > 4)
+    collapsed = _collapsed_uv_faces(bm)
     bm.free()
 
     if non_manifold:
@@ -143,6 +187,13 @@ def _check(obj):
                        f"{'s' if interior > 1 else ''}", 'ERROR'))
     if ngons:
         issues.append((f"{ngons} n-gon{'s' if ngons > 1 else ''}", 'INFO'))
+    if collapsed:
+        shown = ", ".join(str(i) for i in collapsed[:3])
+        more = "" if len(collapsed) <= 3 else ", ..."
+        issues.append((f"{len(collapsed)} face"
+                       f"{'s' if len(collapsed) > 1 else ''} with collapsed "
+                       f"UVs (face {shown}{more}): a texture smears one column "
+                       f"of pixels across each", 'ERROR'))
 
     return issues
 
