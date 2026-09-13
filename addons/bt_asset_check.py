@@ -190,10 +190,15 @@ def _check(obj):
     if collapsed:
         shown = ", ".join(str(i) for i in collapsed[:3])
         more = "" if len(collapsed) <= 3 else ", ..."
+        # No explanation in the row. Blender's sidebar clips a label rather
+        # than wrapping it, and the first draft measured **514 px** of text
+        # against roughly 190 px of usable width at 1.0 UI scale. Cut to the
+        # count and the indices it is 241 px, and the part that survives a
+        # narrow panel is "N faces with collapsed UVs" at 157 px, which is the
+        # part worth keeping. The why is in the README and the listing.
         issues.append((f"{len(collapsed)} face"
                        f"{'s' if len(collapsed) > 1 else ''} with collapsed "
-                       f"UVs (face {shown}{more}): a texture smears one column "
-                       f"of pixels across each", 'ERROR'))
+                       f"UVs (face {shown}{more})", 'ERROR'))
 
     return issues
 

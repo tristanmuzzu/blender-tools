@@ -31,8 +31,8 @@ Then tick it on. Panels show up in the viewport sidebar (press <kbd>N</kbd>)
 under **BTools**.
 
 If you would rather take the lot in one file, the
-[v1.1.0 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.1.0)
-has `blender-tools.zip`: scripts and drag-and-drop zips together, 153,878
+[v1.1.1 release](https://github.com/tristanmuzzu/blender-tools/releases/tag/v1.1.1)
+has `blender-tools.zip`: scripts and drag-and-drop zips together, 154,426
 bytes, and it asks you for nothing.
 
 The same bundle is also on Gumroad at $0,
