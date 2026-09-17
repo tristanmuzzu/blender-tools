@@ -87,7 +87,7 @@
   "applicationCategory": "DesignApplication",
   "operatingSystem": "Windows, macOS, Linux",
   "softwareRequirements": "Blender 3.6 or newer",
-  "description": "Procedural sci-fi hull plating for Blender. Panel layouts, recessed sections, slatted vents, raised blocks and blade fins across five material slots, tested on Blender 3.6 through 5.2.",
+  "description": "Procedural sci-fi hull plating for Blender. Panel layouts, recessed sections, slatted vents, raised blocks, blade fins and stacked hull masses across seven material slots that arrive with their shading already built, tested on Blender 3.6 through 5.2.",
   "url": "https://tristanmuzzu.github.io/blender-tools/",
   "image": "https://tristanmuzzu.github.io/blender-tools/img/panelforge_before_after.jpg",
   "author": {
@@ -97,7 +97,7 @@
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "offers": {
     "@type": "Offer",
-    "price": "24.00",
+    "price": "4.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "https://tristaneer2.gumroad.com/l/panelforge?src=portfolio"
@@ -116,7 +116,7 @@
   },
   "offers": {
     "@type": "Offer",
-    "price": "19.00",
+    "price": "4.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "https://tristaneer2.gumroad.com/l/scifi-corridor-kit?src=portfolio"
@@ -138,7 +138,7 @@
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "offers": {
     "@type": "Offer",
-    "price": "14.00",
+    "price": "4.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "https://tristaneer2.gumroad.com/l/wearforge?src=portfolio"
@@ -182,7 +182,7 @@
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
   "offers": {
     "@type": "Offer",
-    "price": "12.00",
+    "price": "4.99",
     "priceCurrency": "USD",
     "availability": "https://schema.org/InStock",
     "url": "https://tristaneer2.gumroad.com/l/lineforge?src=portfolio"
@@ -211,21 +211,24 @@
 
   <p>
     Procedural sci-fi hull plating. Point it at a hard-surface mesh and it
-    builds panel layouts, recessed sections, slatted vents, raised blocks and
-    blade fins, spread across five material slots.
+    builds panel layouts, recessed sections, slatted vents, raised blocks,
+    blade fins and stacked hull masses, spread across seven material slots
+    that come with their shading already built.
   </p>
 
   <figure>
     <img src="img/panelforge_before_after.jpg" alt="A blocked-out hull before and after PanelForge, same camera and lighting">
-    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 10,972 out, on the defaults PanelForge 1.2.0 ships.</figcaption>
+    <figcaption>Same mesh, same camera, same lights. 540 triangles in, 101,112 out, on the defaults PanelForge 2.11.0 ships. The 1.2.0 version of this picture made 10,948 out of the same blockout, which is what nine releases of plating, masses and paint look like from the outside.</figcaption>
   </figure>
 
   <p>
     Most greeblers spray detail evenly and you can always tell. This one steps
     plate depths in fixed increments instead of drifting them, gathers detail
     into hotspots the way actual hardware does, and skips some plating so bare
-    hull shows through. Sixteen parameters and a seed. Same seed, same result,
-    every time.
+    hull shows through. Thirty settings and a seed. Same seed, same result,
+    every time, with one caveat I would rather say than hide: Blender 4.5
+    changed the order the Bevel modifier hands faces back, so the same seed
+    gives 1,583 plates from 4.5 up and 1,501 on 3.6 and 4.2.
   </p>
 
   <figure>

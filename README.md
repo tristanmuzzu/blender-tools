@@ -120,19 +120,23 @@ run on the same seven Blender versions as the twelve above.
 
 **[PanelForge](https://tristaneer2.gumroad.com/l/panelforge?src=freetools-readme)**
 panels and greebles a hull procedurally. You get plating, vents and fins laid
-out over a mesh instead of modelling each one. $24, same seven Blender
+out over a mesh instead of modelling each one. $4.99, same seven Blender
 versions, same test suite.
-One catch, up front. There are no UVs on the plating, so textured panels mean
-unwrapping after you generate. And it plates over a surface rather than
-cutting into it, with plate size coming from the Min Panel setting in metres
-rather than from your topology, so a curved shape comes out as a lot of small
-plates however you built it.
+One catch, up front. It plates over a surface rather than cutting into it,
+with plate size coming from the Min Panel setting in metres rather than from
+your topology, so a curved shape comes out as a lot of small plates however you
+built it: a 512 face sphere gives about 1,331 plates and a 128 face one about
+1,168. The sentence that used to sit here said there are no UVs on the plating.
+That stopped being true in 1.3.0, which projects them in world metres with a
+texel density slider, and it sat on this page understating the product for two
+weeks. The real UV caveat is narrower: the islands overlap each other, which is
+what a tiling material wants and not what a lightmap bake wants.
 
 **[WearForge](https://tristaneer2.gumroad.com/l/wearforge?src=freetools-readme)**
 chips and chamfers the hard edges of a model you already have. The chamfer
 width changes along the edge, most of the edge is left crisp, and the bites go
 where a part actually gets handled rather than everywhere. It writes a `wear`
-point attribute so you can drive a mask off it. $14.
+point attribute so you can drive a mask off it. $4.99.
 Two catches, up front. It changes a close shot and it does not change a
 thumbnail, which is measured rather than a guess. And the `wear` attribute it
 writes stays inside Blender: FBX drops it, and glTF only carries custom
@@ -142,7 +146,7 @@ loses the mask.
 **[LineForge](https://tristaneer2.gumroad.com/l/lineforge?src=freetools-readme)**
 cuts panel seams into a model you already have. It finds the flat areas,
 divides each one into panels, and sinks a real groove along every seam, and it
-writes a `panel` face attribute so you can shade panels separately. $12.
+writes a `panel` face attribute so you can shade panels separately. $4.99.
 It follows your model where it can: the lip of a recess or the edge of a
 boolean cut becomes a preferred cut line, and neighbouring surfaces are laid
 out knowing where each other's seams meet the shared edge. On the hull in its
@@ -157,7 +161,7 @@ so there's nothing there for the follow pass to find.
 is six modules that tile on a 4 metre grid: a straight, a 90 degree corner, a T
 junction, a four way crossroads, a dead end, and a bulkhead doorway you
 walk through. .blend and .glb, and the Python that generated the lot is in the
-zip, so you can change a number and rebuild rather than edit meshes. $19.
+zip, so you can change a number and rebuild rather than edit meshes. $4.99.
 One catch, up front. There are no textures and no PBR maps, just four
 material slots per piece with the faces already assigned, which is the part
 that takes an afternoon of box-selecting if you do it by hand.
