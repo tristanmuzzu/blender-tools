@@ -386,8 +386,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>35 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>36 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#my-add-on-painted-its-panels-with-the-buyer-s-materials-and-">My add-on painted its panels with the buyer&#x27;s materials and nothing said a word</a></li>
     <li><a href="#a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab">A UV layer being there is not the same as the UVs being usable</a></li>
     <li><a href="#your-script-asked-blender-for-cycles-and-got-eevee-on-all-se">Your script asked Blender for Cycles and got EEVEE, on all seven builds I have</a></li>
     <li><a href="#fbx-export-is-broken-on-blender-5-0-1-and-only-on-5-0-1">FBX export is broken on Blender 5.0.1 and only on 5.0.1</a></li>
@@ -2654,6 +2655,80 @@ def collapsed_faces(mesh):
   </p>
 
 <!-- /section: a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab -->
+
+  <!-- section: my-add-on-painted-its-panels-with-the-buyer-s-materials-and- -->
+  <h2 id="my-add-on-painted-its-panels-with-the-buyer-s-materials-and-">My add-on painted its panels with the buyer&#x27;s materials and nothing said a word</h2>
+
+  <p>On a cube carrying three materials of its own, 30,322 of the 55,912 faces my generator emitted came out in somebody else&#x27;s steel, glass and paint. That&#x27;s 54.2% of the job. Nothing raised. No console warning, no red text in the info bar, and every test I had went green.</p>
+
+  <p>The add-on plates a mesh with procedural hull panelling. It creates seven materials, appends them to the object, and writes a <code>material_index</code> onto each face it makes: 0 for the hull tone, 1 for plate, 2 for the accent colour, on up to 6.</p>
+
+  <p>Fine right until the mesh already has materials on it.</p>
+
+  <p><code>material_index</code> is an index into the object&#x27;s slot list. It isn&#x27;t an index into &quot;the materials I made&quot;. If the hull already carries three of the user&#x27;s own, <code>obj.data.materials.append()</code> puts mine at 3, 4, 5 and up, and every index I wrote lands three slots low. My plate tone was their glass. My accent was their paint.</p>
+
+  <p>I&#x27;d tested this thing on a cube, a cylinder, a cone, a sphere, a monkey, a torus, a terrain grid and a twelve-box spaceship blockout. Every one of those is a mesh my own script made a minute earlier with nothing assigned to it, so slot 0 really was my hull material and the bug couldn&#x27;t show. A buyer&#x27;s subject is a hull they modelled and textured. That&#x27;s the one shape nothing ever ran.</p>
+
+  <p>Here&#x27;s the part that makes it hard to catch. Set a face&#x27;s <code>material_index</code> past the end of the slot list and Blender doesn&#x27;t complain:</p>
+
+  <pre><code>for want in (0, 2, 3, 9, 200):
+    ob.data.polygons[0].material_index = want
+    print(want, ob.data.polygons[0].material_index)</code></pre>
+
+  <p>On a three-slot object that prints back 0, 2, 3, 9 and 200. It stores whatever you give it.</p>
+
+  <p>Storing it is one question and drawing it is another, so I rendered it. Black emission on slots 0 and 1, a loud red on slot 2, every face set to 9, 64 by 64, Cycles, 16 samples. Centre pixel came back 0.796, 0.384, 0.282. Then I set every face to 2 and rendered again, and got 0.796, 0.384, 0.282. The same three numbers. Asking for slot 9 on a three-slot object draws slot 2, quietly, and asking for 200 would do the same.</p>
+
+  <p>So an off-by-three in a material index isn&#x27;t a crash. It&#x27;s a picture that looks plausible until somebody who knows the model looks at it.</p>
+
+  <p>The picture up top is that failure on a ship blockout rather than on the cube, because a cube doesn&#x27;t show you much. Left is the broken build, right is the fixed one, same seed, same three materials assigned. The red is the user&#x27;s own hull material and it&#x27;s meant to still be there on the right. The green and blue are mine landing where they shouldn&#x27;t.</p>
+
+  <p>There was a second half, and I think a lot of add-ons have this one. The loop that created my seven materials went like this:</p>
+
+  <pre><code>for name in MATERIAL_SLOTS:
+    if len(obj.data.materials) &gt;= len(MATERIAL_SLOTS):
+        break
+    ...
+    obj.data.materials.append(mat)</code></pre>
+
+  <p>Read it on a mesh with three materials already. The count starts at 3, the loop runs four times and stops. Four of my seven get created. The other three never exist on that object at all. Here&#x27;s what the slot list actually came out as, printed off the object:</p>
+
+  <pre><code>BuyerSteel, BuyerGlass, BuyerPaint, PF_Hull, PF_Plate, PF_Accent, PF_PlateAlt</code></pre>
+
+  <p>PF_PlateWorn, PF_Emit and PF_AccentB are missing. Three of the seven tones the product advertises are just absent, and the count says seven so the loop is happy.</p>
+
+  <p>Both fixes are small. Create the slots you&#x27;re missing by name rather than by counting them:</p>
+
+  <pre><code>have = {m.name for m in obj.data.materials if m is not None}
+for name in MATERIAL_SLOTS:
+    if f&quot;PF_{name}&quot; in have:
+        continue
+    obj.data.materials.append(get_or_make(f&quot;PF_{name}&quot;))</code></pre>
+
+  <p>Then find where your own block of slots starts and offset everything you write by it. My generator names a slot in about twenty places and they all funnel through one assignment, so I did it once at the end rather than at each of them, by snapshotting which faces existed before I started:</p>
+
+  <pre><code>original = set(bm.faces)      # nothing in this generator ever removes a face
+...
+if base:
+    for f in bm.faces:
+        if f not in original:
+            f.material_index += base</code></pre>
+
+  <p>The snapshot is doing a second job. Faces that were in the user&#x27;s mesh keep the materials the user gave them, so between my plates you still see their hull. That&#x27;s deliberate, and it has a cost I should say out loud: the first render on a textured model won&#x27;t look like the pictures on my store page, because half of what you&#x27;re seeing is still the user&#x27;s own surface. Overwriting a material somebody chose seemed worse than that.</p>
+
+  <p>Numbers to close with, same cube, same seed 3, Blender 4.2.23. Before the fix, 30,322 of 55,912 emitted faces on the user&#x27;s materials. After, zero, and the cube&#x27;s own six faces still carry the material the user put there. The triangle count is 132,568 either way, which is the bit that let this hide: geometry never moved, so every count I was checking stayed correct while the picture was wrong.</p>
+
+  <p>One more, because it&#x27;s the number that actually stung. The counting loop went in on 15 August, in the first packaged release. It shipped in all 19 releases after it. I found it while reading that loop to add an eighth slot for something else entirely.</p>
+
+  <figure>
+    <img src="media/f297-before-after.jpg" alt="f297-before-after">
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $4.99</a>
+  </p>
+
+<!-- /section: my-add-on-painted-its-panels-with-the-buyer-s-materials-and- -->
 
   <h2>Free add-ons</h2>
 
