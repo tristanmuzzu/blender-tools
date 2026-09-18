@@ -386,8 +386,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>36 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>37 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#every-plate-had-its-centre-on-the-face-some-had-both-ends-in">Every plate had its centre on the face. Some had both ends in space.</a></li>
     <li><a href="#my-add-on-painted-its-panels-with-the-buyer-s-materials-and-">My add-on painted its panels with the buyer&#x27;s materials and nothing said a word</a></li>
     <li><a href="#a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab">A UV layer being there is not the same as the UVs being usable</a></li>
     <li><a href="#your-script-asked-blender-for-cycles-and-got-eevee-on-all-se">Your script asked Blender for Cycles and got EEVEE, on all seven builds I have</a></li>
@@ -2729,6 +2730,53 @@ if base:
   </p>
 
 <!-- /section: my-add-on-painted-its-panels-with-the-buyer-s-materials-and- -->
+
+  <!-- section: every-plate-had-its-centre-on-the-face-some-had-both-ends-in -->
+  <h2 id="every-plate-had-its-centre-on-the-face-some-had-both-ends-in">Every plate had its centre on the face. Some had both ends in space.</h2>
+
+  <p>Every plate my generator put on that cylinder had its centre on the hull. Some of them had both ends in open space, 0.29 m off a drum with a radius of 0.72. That&#x27;s 40% of the radius sticking out into nothing, and I&#x27;d never seen it, because everything I had ever pointed the thing at was a box.</p>
+
+  <p>The add-on plates a hard-surface mesh with procedural hull panelling. It works per face group: gather faces whose normals agree within 12 degrees, build a 2D frame on them, plan the whole layout in that frame, then lift each element back onto the surface. Planning in 2D is what lets panel lines on neighbouring faces snap to one lattice instead of wandering.</p>
+
+  <p>The plan covers the group&#x27;s bounding rectangle. That&#x27;s the part that bites.</p>
+
+  <p>For a rectangular face the bounding rectangle is the face, so anything the plan puts down lands on real surface. For a disc it isn&#x27;t. A cylinder&#x27;s end cap is a 32-gon, its bounding square has four corners of empty space, and roughly 22% of that square is off the edge of the metal.</p>
+
+  <p>I did have a containment test. It asked whether the element&#x27;s centre was on the group, which is a question with a comfortable answer and the wrong one. A plate 0.03 m wide and 1.3 m long, lying across the cap with its middle over the centre, passes that test with both ends hanging past the rim.</p>
+
+  <p>Here&#x27;s how to catch it without opening a render. Tag the faces you generate, then measure every generated vertex against the surface it&#x27;s supposed to be standing on. On a cylinder along X that&#x27;s one line of trigonometry:</p>
+
+  <pre><code>own = me.attributes[&quot;MyGenerator&quot;]        # 1 on faces I made
+worst = 0.0
+for i, poly in enumerate(me.polygons):
+    if not own.data[i].value:
+        continue
+    for vi in poly.vertices:
+        co = me.vertices[vi].co
+        worst = max(worst, math.hypot(co.y, co.z))
+print(worst, &quot;against a hull radius of&quot;, r)</code></pre>
+
+  <p>Mine printed 1.0092 against 0.72.</p>
+
+  <p>The distribution is why no counter ever caught this. Median radius 0.7163, 90th percentile 0.7435, 99.9th 0.7810. It&#x27;s a tail. Triangle counts looked healthy, the mesh was as manifold as it ever is, the UV check was green, and the release gate went 7/7 across seven Blender versions on a build with slabs hanging off it. Numbers that aggregate hide the exact thing that ruins a silhouette, and a silhouette is what somebody judges in a thumbnail.</p>
+
+  <p>The fix is to ask the question about the whole element rather than its middle. Test the outline&#x27;s corners as well as the centre, and pull each corner about 4% toward the centre before testing it. That last bit matters more than it sounds: plating tiles right up to the face boundary, so corners sit exactly on the edge, and a ray cast through a point on the boundary answers either way depending on which edge it hits first. Without the nudge the fix throws away good plating along every seam.</p>
+
+  <p>The cost is a few point-in-polygon tests per element, and you can skip almost all of them. If a group&#x27;s faces cover their own bounding rectangle, no element whose centre is on the group can have a corner off it, so the corner tests are pointless there. Sum the polygon areas, compare against the bounding box, skip if they match. Every group on a box-shaped model takes that path, which means box output stays bit for bit identical: I checked three seeds by hashing vertex positions before and after, and all 22 of my counters agree.</p>
+
+  <p>Worst overshoot on that drum went from 0.2892 m to 0.0749 m, and what&#x27;s left is a superstructure block standing on the end cap, where it belongs.</p>
+
+  <p>What I actually take from this is duller than the geometry. My test subjects were a cube, a sphere, a cone, a torus, a terrain grid and a twelve-box ship blockout, and I&#x27;d added more subjects over time thinking I was widening the net. Every box-built one of them has face groups that fill their bounding rectangle exactly, so the entire class of &quot;the plan owns area that isn&#x27;t on the face&quot; was unreachable by construction. Not unlikely. Unreachable. The first thing a person models when they want a spaceship is a cylinder, and I got there in month two.</p>
+
+  <figure>
+    <img src="media/cylinder-before-after.jpg" alt="cylinder-before-after">
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $4.99</a>
+  </p>
+
+<!-- /section: every-plate-had-its-centre-on-the-face-some-had-both-ends-in -->
 
   <h2>Free add-ons</h2>
 
