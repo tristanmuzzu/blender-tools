@@ -386,8 +386,9 @@
 
   <nav id="writing-index">
   <h2>Everything I have written down here</h2>
-  <p>37 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
+  <p>38 pieces, newest first. Every one of them is something that went wrong and the numbers I took while working out why.</p>
   <ol>
+    <li><a href="#my-generator-measured-the-tessellation-and-thought-the-ship-">My generator measured the tessellation and thought the ship was small</a></li>
     <li><a href="#every-plate-had-its-centre-on-the-face-some-had-both-ends-in">Every plate had its centre on the face. Some had both ends in space.</a></li>
     <li><a href="#my-add-on-painted-its-panels-with-the-buyer-s-materials-and-">My add-on painted its panels with the buyer&#x27;s materials and nothing said a word</a></li>
     <li><a href="#a-uv-layer-being-there-is-not-the-same-as-the-uvs-being-usab">A UV layer being there is not the same as the UVs being usable</a></li>
@@ -2777,6 +2778,57 @@ print(worst, &quot;against a hull radius of&quot;, r)</code></pre>
   </p>
 
 <!-- /section: every-plate-had-its-centre-on-the-face-some-had-both-ends-in -->
+
+  <!-- section: my-generator-measured-the-tessellation-and-thought-the-ship- -->
+  <h2 id="my-generator-measured-the-tessellation-and-thought-the-ship-">My generator measured the tessellation and thought the ship was small</h2>
+
+  <p>My generator measured the tessellation and thought the ship was small.</p>
+
+  <p>Point my hull-plating add-on at a box and it puts decks, towers, tank rows and masts on it. Point it at a cylinder and it puts none of them on the curved side. Everything that stands off the hull lands on the two flat end caps, so the caps read as finished and the side reads as primer. I assumed for weeks that curved surfaces were just harder. They aren&#x27;t. I was measuring the wrong thing.</p>
+
+  <p>The add-on works on face groups: gather faces whose normals agree within 12 degrees, plan a layout in a flat frame on them, lift the result back onto the surface. Big standing masses are gated on how big the group is, because a tower on a face too small to hold it looks wrong and I had the bug to prove it. The bar is the largest group&#x27;s short side times 0.45.</p>
+
+  <p>Now do that on a 32-sided drum. Twelve degrees of tolerance means the side splits into about eighteen strips, roughly three columns each. On a drum 3.4 m long and 1.44 m across, the median strip is 0.281 m wide. The largest group on the object is an end cap at 1.440 m, so the bar is 0.648 m. Every strip on the curved side fails it, every time, on every seed.</p>
+
+  <p>That number, 0.281, is not a fact about the ship. It&#x27;s a fact about how many sides I gave the cylinder. Give it 64 and the strips get narrower and the problem gets worse. The measurement was reporting my tessellation back to me and I was treating it as geometry.</p>
+
+  <p>So measure the surface instead of the patch. Groups that meet at a shallow angle are one continuous shell, so union them and take the shell&#x27;s size. On that drum the side comes out at 1.440 m instead of 0.281, which is the diameter, and it clears the bar.</p>
+
+  <p>Nothing gets planned in the union, only measured. A wide curved band planned in one averaged plane sinks into the hull at the band&#x27;s edges, which is a fault I had already fixed once and did not want back.</p>
+
+  <p>First version gated on how many groups were in the shell: four or more means a curve. That moved my flat test hull by 888 vertices on seed 3, which is exactly what I had promised myself would not happen. A bevelled box is covered in shallow-angle chains too, and mine were nine groups each, comfortably over the bar.</p>
+
+  <p>The thing that actually separates them is whether the shell wraps:</p>
+
+  <pre><code>dims = sorted(bbox_max[k] - bbox_min[k] for k in range(3))
+if dims[0] &lt; 0.25 * dims[1]:
+    continue          # a flat band around a face, not a curved surface</code></pre>
+
+  <p>Every shell on the box is a bevel band about one flat face. It measures 0.030 m through against 0.639 to 1.799 m wide, so 1.7% to 4.7%. The drum&#x27;s side is 1.440 m through and 1.440 m wide, so 100%. A quarter is a bar neither shape is anywhere near, and after that the flat hull came out vertex for vertex identical on three seeds, same hash, same 118,792 triangles.</p>
+
+  <p>Then the part I want to write down, because I nearly shipped it.</p>
+
+  <p>Every counter said the change worked. Standing masses on the drum went from 59, 45 and 51 tiers to 73, 65 and 70 across three seeds. Plates, bays, greebles and module runs held to the unit. That is the shape of a clean win and I very nearly took it.</p>
+
+  <p>The render came back with six white needles sticking through the silhouette, two of them crossing a box section. A mast&#x27;s width is floored at a constant and does not grow with the surface, while its height scales with it. Letting the measure jump from 0.281 to 1.440 took the ratio to about 27 to 1. I had made antennae out of hair.</p>
+
+  <p>Bounding it at 9 to 1 and clamping the height to the bay it stands on fixed it, and the masts now look like masts. But no counter I had was ever going to tell me that, and if I had trusted the numbers I would have put it on the store.</p>
+
+  <p>Two things I&#x27;d take to any procedural work. A face group&#x27;s dimensions describe your topology, not your model, so be careful what you gate on. And a counter moving the right way is not a render.</p>
+
+  <figure>
+    <video src="media/panelforge_before_after.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <figure>
+    <video src="media/panelforge_sweep_thickness_scale.mp4" controls muted loop playsinline preload="metadata"></video>
+  </figure>
+
+  <p>
+    <a class="btn-main" href="https://tristaneer2.gumroad.com/l/panelforge?src=portfolio">Get PanelForge, $4.99</a>
+  </p>
+
+<!-- /section: my-generator-measured-the-tessellation-and-thought-the-ship- -->
 
   <h2>Free add-ons</h2>
 
